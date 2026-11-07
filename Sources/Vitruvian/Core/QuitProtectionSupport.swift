@@ -1,0 +1,244 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Vorssaint
+
+import Foundation
+
+package enum QuitProtectionShortcut: String, CaseIterable, Identifiable {
+    case quit
+    case close
+
+    package var id: String { rawValue }
+    package var character: String { self == .quit ? "q" : "w" }
+    /// The US position, used only while no layout and no character can be read.
+    package var fallbackKeyCode: Int64 { self == .quit ? 12 : 13 }
+    package var symbol: String { self == .quit ? "⌘Q" : "⌘W" }
+}
+
+package enum QuitProtectionMode: String, CaseIterable, Identifiable {
+    case hold
+    case doublePress
+    case extraModifier
+
+    package var id: String { rawValue }
+}
+
+package enum QuitProtectionExtraModifier: String, CaseIterable, Identifiable {
+    case shift
+    case option
+    case control
+
+    package var id: String { rawValue }
+}
+
+package enum QuitProtectionScope: String, CaseIterable, Identifiable {
+    case all
+    case selectedOnly
+    case allExceptSelected
+
+    package var id: String { rawValue }
+}
+
+package struct QuitProtectionConfiguration: Equatable {
+    package var enabled: Bool
+    package var mode: QuitProtectionMode
+    package var holdDurationMilliseconds: Double
+    package var doublePressIntervalMilliseconds: Double
+    package var extraModifier: QuitProtectionExtraModifier
+    package var scope: QuitProtectionScope
+    package var exceptions: [String]
+    package var showFeedback: Bool
+
+    // Spelled out because a memberwise initializer never leaves its module.
+    package init(enabled: Bool, mode: QuitProtectionMode, holdDurationMilliseconds: Double,
+                 doublePressIntervalMilliseconds: Double,
+                 extraModifier: QuitProtectionExtraModifier, scope: QuitProtectionScope,
+                 exceptions: [String], showFeedback: Bool) {
+        self.enabled = enabled
+        self.mode = mode
+        self.holdDurationMilliseconds = holdDurationMilliseconds
+        self.doublePressIntervalMilliseconds = doublePressIntervalMilliseconds
+        self.extraModifier = extraModifier
+        self.scope = scope
+        self.exceptions = exceptions
+        self.showFeedback = showFeedback
+    }
+}
+
+package enum QuitProtectionSupport {
+    /// Where the confirmation pill of `size` sits: centred near the bottom of
+    /// the visible frame of `preferred`, else of the display the pointer is
+    /// on, else of `main` or the first display. Nil with no display at all.
+    package static func panelOrigin(size: CGSize, preferred: ScreenGeometry?, pointer: CGPoint,
+                                    screens: [ScreenGeometry], main: ScreenGeometry?) -> CGPoint? {
+        guard let screen = preferred ?? ScreenGeometry.under(pointer, among: screens, fallback: main ?? screens.first)
+        else { return nil }
+        let frame = screen.visibleFrame
+        return CGPoint(x: (frame.midX - size.width / 2).rounded(), y: (frame.minY + 18).rounded())
+    }
+
+    package static let holdDurationRange = 250.0...2_000.0
+    package static let doublePressIntervalRange = 200.0...1_500.0
+    package static let defaultHoldDurationMilliseconds = 800.0
+    package static let defaultDoublePressIntervalMilliseconds = 600.0
+
+    package static func sanitizedHoldDuration(_ value: Double) -> Double {
+        guard value.isFinite else { return defaultHoldDurationMilliseconds }
+        return min(max(value, holdDurationRange.lowerBound), holdDurationRange.upperBound)
+    }
+
+    package static func sanitizedDoublePressInterval(_ value: Double) -> Double {
+        guard value.isFinite else { return defaultDoublePressIntervalMilliseconds }
+        return min(max(value, doublePressIntervalRange.lowerBound), doublePressIntervalRange.upperBound)
+    }
+
+    /// CGEvent timestamps are monotonic nanoseconds. Confirmation uses them
+    /// directly so a busy main run loop cannot make a valid second press miss
+    /// its configured interval.
+    package static func isWithinDoublePressInterval(firstTimestamp: UInt64,
+                                            secondTimestamp: UInt64,
+                                            intervalMilliseconds: Double) -> Bool {
+        guard secondTimestamp >= firstTimestamp else { return false }
+        let allowedNanoseconds = UInt64(
+            sanitizedDoublePressInterval(intervalMilliseconds) * 1_000_000
+        )
+        return secondTimestamp - firstTimestamp <= allowedNanoseconds
+    }
+
+    package static func usesNativeQuitRequest(for shortcut: QuitProtectionShortcut,
+                                              bundleIdentifier: String? = nil,
+                                              confirmedWithExtraModifier: Bool = false) -> Bool {
+        guard shortcut == .quit else { return false }
+        guard let bundleIdentifier else { return true }
+        if requiresSyntheticQuit(bundleIdentifier: bundleIdentifier) {
+            return false
+        }
+        // These send each held key on its own, not the flags of the replayed
+        // press, so with the extra modifier still down the other computer
+        // would get ⇧⌘Q or ⌃⌘Q. Quitting the app itself does less harm.
+        if keyForwardingBundleIdentifiers.contains(bundleIdentifier) {
+            return confirmedWithExtraModifier
+        }
+        return true
+    }
+
+    package static func requiresSyntheticQuit(bundleIdentifier: String) -> Bool {
+        bundleIdentifier == "com.valvesoftware.steam"
+    }
+
+    /// Remote screens and virtual machines pass ⌘Q on to the computer they
+    /// show, which quits its own app. Terminating one of them instead quits
+    /// the local window onto that computer.
+    static let keyForwardingBundleIdentifiers: Set<String> = [
+        // Remote screens
+        "com.apple.ScreenSharing",
+        "com.apple.RemoteDesktop",
+        "com.microsoft.rdc.macos",
+        "com.p5sys.jump.mac.viewer",
+        "com.p5sys.jump.mac.viewer.web",
+        "com.edovia.screens.5",
+        "com.realvnc.rvncconnect",
+        "com.realvnc.vncviewer",
+        "com.teamviewer.TeamViewer",
+        "com.philandro.anydesk",
+        "com.carriez.rustdesk",
+        "com.splashtop.stb.macosx",
+        "com.splashtop.stp.macosx",
+        "com.2X.Client.Mac",
+        "com.lemonmojo.RoyalTSX.App",
+        "com.devolutions.remotedesktopmanager",
+        "com.citrix.receiver.icaviewer.mac",
+        "com.omnissa.horizon.client.mac",
+        "com.vmware.horizon",
+        "tv.parsec.www",
+        "com.moonlight-stream.Moonlight",
+        // Virtual machines
+        "com.parallels.desktop.console",
+        "com.parallels.desktop.appstore",
+        "com.vmware.fusion",
+        "com.utmapp.UTM",
+        "org.virtualbox.app.VirtualBoxVM",
+        "codes.rambo.VirtualBuddy",
+    ]
+
+    package static func scopeAllows(_ scope: QuitProtectionScope,
+                            bundleIdentifier: String?,
+                            exceptions: [String]) -> Bool {
+        let contains = bundleIdentifier.map { exceptions.contains($0) } ?? false
+        switch scope {
+        case .all: return true
+        case .selectedOnly: return contains
+        case .allExceptSelected: return !contains
+        }
+    }
+
+    /// Only the exact Command shortcut is protected by hold/double press.
+    /// Extra-modifier mode deliberately claims the bare shortcut too, so a
+    /// user cannot bypass protection by pressing plain Command-Q/Command-W.
+    package static func isBaseShortcut(keyCharacter: String?,
+                               keyCode: Int64,
+                               commandLabel: String?,
+                               command: Bool,
+                               control: Bool,
+                               option: Bool,
+                               shift: Bool,
+                               shortcut: QuitProtectionShortcut) -> Bool {
+        guard command, !control, !option, !shift else { return false }
+        return matchesKey(keyCharacter: keyCharacter,
+                          keyCode: keyCode,
+                          commandLabel: commandLabel,
+                          shortcut: shortcut)
+    }
+
+    package static func isExtraShortcut(keyCharacter: String?,
+                                keyCode: Int64,
+                                commandLabel: String?,
+                                command: Bool,
+                                control: Bool,
+                                option: Bool,
+                                shift: Bool,
+                                shortcut: QuitProtectionShortcut,
+                                extraModifier: QuitProtectionExtraModifier) -> Bool {
+        guard command else { return false }
+        let hasExtra: Bool
+        switch extraModifier {
+        case .shift: hasExtra = shift && !option && !control
+        case .option: hasExtra = option && !shift && !control
+        case .control: hasExtra = control && !shift && !option
+        }
+        return hasExtra && matchesKey(keyCharacter: keyCharacter,
+                                      keyCode: keyCode,
+                                      commandLabel: commandLabel,
+                                      shortcut: shortcut)
+    }
+
+    /// `commandLabel` is what the layout's Command table types on this key, the
+    /// table macOS resolves Command-Q through; `keyCharacter` is the bare one,
+    /// "й" on Russian and ";" on Greek for the very key that quits.
+    package static func matchesKey(keyCharacter: String?,
+                           keyCode: Int64,
+                           commandLabel: String?,
+                           shortcut: QuitProtectionShortcut) -> Bool {
+        if let commandLabel {
+            return commandLabel.lowercased() == shortcut.character
+        }
+        if let keyCharacter {
+            return keyCharacter.lowercased() == shortcut.character
+        }
+        return keyCode == shortcut.fallbackKeyCode
+    }
+
+    package static func modeFor(_ rawValue: String?) -> QuitProtectionMode {
+        guard let rawValue, let value = QuitProtectionMode(rawValue: rawValue) else { return .hold }
+        return value
+    }
+
+    package static func extraModifierFor(_ rawValue: String?) -> QuitProtectionExtraModifier {
+        guard let rawValue, let value = QuitProtectionExtraModifier(rawValue: rawValue) else { return .shift }
+        return value
+    }
+
+    package static func scopeFor(_ rawValue: String?) -> QuitProtectionScope {
+        guard let rawValue, let value = QuitProtectionScope(rawValue: rawValue) else { return .all }
+        return value
+    }
+}

@@ -1,0 +1,354 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Vorssaint
+
+import AppKit
+import CoreGraphics
+import Foundation
+
+package enum NotchTimerMode: String, CaseIterable { case timer, pomodoro, stopwatch }
+package enum NotchTimerPhase: String { case timer, focus, shortBreak, longBreak, stopwatch }
+
+package enum NotchTimerRulerScale {
+    package static let spacing = 14.0
+
+    package static func moving(_ value: Double, by points: Double) -> Double {
+        guard value.isFinite, points.isFinite else { return 1 }
+        return min(180, max(1, value - points / spacing))
+    }
+
+    package static func minute(_ value: Double) -> Int {
+        Int(moving(value, by: 0).rounded())
+    }
+
+    package static func offset(of minute: Int, selected: Int) -> Double {
+        (Double(minute) - Double(selected)) * spacing
+    }
+
+    package static func label(for minute: Int) -> String {
+        minute >= 60 ? NotchTimerSupport.hoursText(hours: minute / 60, minutes: minute % 60) : String(minute)
+    }
+}
+
+/// Preferences describe the next cycle; a running cycle owns an immutable copy.
+package struct NotchPomodoroConfiguration: Equatable {
+    package static let focusRange = 1...180
+    package static let breakRange = 1...60
+    package static let sessionRange = 1...24
+    package let focusMinutes: Int
+    package let shortBreakMinutes: Int
+    package let longBreakMinutes: Int
+    package let longBreakInterval: Int
+    package let totalSessions: Int
+
+    package init(focusMinutes: Int = 25, shortBreakMinutes: Int = 5, longBreakMinutes: Int = 15,
+         longBreakInterval: Int = 4, totalSessions: Int = 4) {
+        self.focusMinutes = min(Self.focusRange.upperBound, max(Self.focusRange.lowerBound, focusMinutes))
+        self.shortBreakMinutes = min(Self.breakRange.upperBound, max(Self.breakRange.lowerBound, shortBreakMinutes))
+        self.longBreakMinutes = min(Self.breakRange.upperBound, max(Self.breakRange.lowerBound, longBreakMinutes))
+        self.longBreakInterval = min(Self.sessionRange.upperBound, max(Self.sessionRange.lowerBound, longBreakInterval))
+        self.totalSessions = min(Self.sessionRange.upperBound, max(Self.sessionRange.lowerBound, totalSessions))
+    }
+
+    package static func load(in defaults: UserDefaults = .standard) -> Self {
+        Self(focusMinutes: defaults[Preferences.notchPomodoroFocusMinutes],
+             shortBreakMinutes: defaults[Preferences.notchPomodoroShortBreakMinutes],
+             longBreakMinutes: defaults[Preferences.notchPomodoroLongBreakMinutes],
+             longBreakInterval: defaults[Preferences.notchPomodoroLongBreakInterval],
+             totalSessions: defaults[Preferences.notchPomodoroTotalSessions])
+    }
+}
+
+/// Every value accepted by the saved configuration remains selectable.
+package enum NotchPomodoroOption: CaseIterable, Identifiable {
+    case focus, shortBreak, longBreak, longBreakInterval, totalSessions
+    package var id: Self { self }
+
+    package var range: ClosedRange<Int> {
+        switch self {
+        case .focus: return NotchPomodoroConfiguration.focusRange
+        case .shortBreak, .longBreak: return NotchPomodoroConfiguration.breakRange
+        case .longBreakInterval, .totalSessions: return NotchPomodoroConfiguration.sessionRange
+        }
+    }
+
+    package var isDuration: Bool {
+        switch self {
+        case .focus, .shortBreak, .longBreak: return true
+        case .longBreakInterval, .totalSessions: return false
+        }
+    }
+}
+
+/// The anchor is an injected, continuous time coordinate: a countdown's
+/// deadline, or the instant a stopwatch read zero. UI refreshes and delayed
+/// callbacks never subtract ticks, so sleep and busy frames cannot drift.
+package struct NotchTimerSession: Equatable {
+    package private(set) var mode: NotchTimerMode = .timer
+    package private(set) var phase: NotchTimerPhase = .timer
+    package private(set) var duration: TimeInterval = 300
+    package private(set) var anchor: TimeInterval?
+    package private(set) var pausedReading: TimeInterval?
+    package private(set) var completed = false
+    package private(set) var completedFocuses = 0
+    package private(set) var configuration = NotchPomodoroConfiguration()
+
+    package var countsUp: Bool { mode == .stopwatch }
+    package var isRunning: Bool { anchor != nil }
+    package var isPaused: Bool { pausedReading != nil }
+    package var hasSession: Bool { isRunning || isPaused || completed }
+    package var deadline: TimeInterval? { countsUp ? nil : anchor }
+    package var cycleFinished: Bool { mode == .pomodoro && completed && completedFocuses >= configuration.totalSessions }
+    package var canStartNext: Bool { mode == .pomodoro && completed && !cycleFinished }
+    package var sessionNumber: Int {
+        min(configuration.totalSessions, completedFocuses + (phase == .focus && !completed ? 1 : 0))
+    }
+
+    /// Seconds left in a countdown, or elapsed on a stopwatch.
+    package func reading(at now: TimeInterval) -> TimeInterval {
+        if let anchor { return max(0, countsUp ? now - anchor : anchor - now) }
+        return pausedReading ?? (completed || countsUp ? 0 : duration)
+    }
+
+    package mutating func start(mode: NotchTimerMode, minutes: Int, now: TimeInterval,
+                        configuration: NotchPomodoroConfiguration = NotchPomodoroConfiguration()) {
+        guard !hasSession, now.isFinite else { return }
+        self.mode = mode
+        self.configuration = configuration
+        completedFocuses = 0
+        switch mode {
+        case .timer:
+            phase = .timer
+            duration = Double(NotchTimerSupport.timerMinutes(minutes)) * 60
+            anchor = now + duration
+        case .pomodoro:
+            phase = .focus
+            duration = Double(configuration.focusMinutes) * 60
+            anchor = now + duration
+        case .stopwatch:
+            phase = .stopwatch
+            duration = 0
+            anchor = now
+        }
+    }
+
+    @discardableResult package mutating func finishIfDue(at now: TimeInterval) -> Bool {
+        guard let deadline, now.isFinite, now >= deadline else { return false }
+        anchor = nil
+        pausedReading = nil
+        completed = true
+        if phase == .focus { completedFocuses += 1 }
+        return true
+    }
+
+    package mutating func pause(at now: TimeInterval) {
+        guard isRunning, now.isFinite else { return }
+        if finishIfDue(at: now) { return }
+        pausedReading = reading(at: now)
+        anchor = nil
+    }
+
+    package mutating func resume(at now: TimeInterval) {
+        guard let reading = pausedReading, now.isFinite else { return }
+        pausedReading = nil
+        anchor = countsUp ? now - reading : now + reading
+    }
+
+    package var nextPhase: NotchTimerPhase {
+        phase == .focus ? (completedFocuses.isMultiple(of: configuration.longBreakInterval) ? .longBreak : .shortBreak) : .focus
+    }
+
+    /// A new phase always starts by an explicit action. Returning from a long
+    /// sleep cannot silently complete work/break cycles the user never took.
+    package mutating func startNext(at now: TimeInterval) {
+        guard canStartNext, now.isFinite else { return }
+        phase = nextPhase
+        duration = Double(phase == .focus ? configuration.focusMinutes
+            : phase == .longBreak ? configuration.longBreakMinutes : configuration.shortBreakMinutes) * 60
+        completed = false
+        anchor = now + duration
+    }
+
+    package mutating func cancel() { self = Self() }
+
+    // Spelled out because a memberwise initializer never leaves its module.
+    package init(mode: NotchTimerMode = .timer, phase: NotchTimerPhase = .timer, duration: TimeInterval = 300, anchor: TimeInterval? = nil, pausedReading: TimeInterval? = nil, completed: Bool = false, completedFocuses: Int = 0, configuration: NotchPomodoroConfiguration = NotchPomodoroConfiguration()) {
+        self.mode = mode
+        self.phase = phase
+        self.duration = duration
+        self.anchor = anchor
+        self.pausedReading = pausedReading
+        self.completed = completed
+        self.completedFocuses = completedFocuses
+        self.configuration = configuration
+    }
+}
+
+package enum NotchTimerSupport {
+    /// Hiding the countdown never disables the session or its completion
+    /// alerts, and a finished timer shows in the closed island until it is
+    /// dismissed. The expanded timer page remains available.
+    package static func showsActivity(_ session: NotchTimerSession, in defaults: UserDefaults = .standard) -> Bool {
+        session.hasSession && isEnabled(in: defaults)
+            && (session.completed || !defaults[Preferences.notchHideTimerCountdown])
+    }
+
+    package static func isSoundEnabled(in defaults: UserDefaults = .standard) -> Bool {
+        defaults[Preferences.notchTimerSoundEnabled]
+    }
+
+    package static func isEnabled(in defaults: UserDefaults = .standard) -> Bool {
+        NotchSupport.isEnabled(in: defaults) && AppFeature.notchTimer.isAvailable(in: defaults)
+            && defaults[Preferences.notchTimerEnabled]
+            && NotchSupport.modules(in: defaults).contains(.timer)
+    }
+
+    /// The modes read as three words in a row, the current one underlined,
+    /// each as wide as its text, where a full top row leaves them room;
+    /// beside a camera they are a menu named by the current one, its chevron
+    /// `menuSpacing` from the name. The test measures both in every language.
+    package enum ModePicker {
+        package static let height: CGFloat = 24
+        package static let spacing: CGFloat = 14
+        package static let labelSize: CGFloat = 12
+        package static let labelPadding: CGFloat = 4
+        package static let menuSpacing: CGFloat = 3
+        /// macOS 15 draws Japanese kana about 4% wider than macOS 26, so the
+        /// stopwatch's name needs about 0.74 of its size beside the widest
+        /// camera there.
+        package static let menuMinimumScale: CGFloat = 0.7
+
+        /// Whether the menu beside the camera can name the current mode in
+        /// `room`: every mode's name, so choosing another never changes how
+        /// the menu reads, at the minimum scale with macOS 15's wider kana.
+        /// Where the sections button leaves less, the menu shows the mode's
+        /// glyph instead of cutting its name.
+        package static func menuNamesFit(_ names: [String], in room: CGFloat) -> Bool {
+            let font = NSFont.systemFont(ofSize: labelSize, weight: .medium)
+            let widest = names.map { ($0 as NSString).size(withAttributes: [.font: font]).width }.max() ?? 0
+            let chevron = NSImage(systemSymbolName: "chevron.down", accessibilityDescription: nil)?
+                .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 9, weight: .semibold))?.size.width ?? 8
+            return widest * menuMinimumScale * 1.05 + menuSpacing + chevron + labelPadding * 2 <= room
+        }
+
+        /// The glyph a menu with no room for the name shows: the closed
+        /// island's own, a countdown's timer or the stopwatch.
+        package static func symbol(for mode: NotchTimerMode) -> String { mode == .stopwatch ? "stopwatch" : "timer" }
+    }
+
+    /// The start capsule in the top row; the test measures it against a side
+    /// beside the camera, with the pin, in every language.
+    package enum StartButton {
+        package static let labelSize: CGFloat = 12
+        package static let padding: CGFloat = 10
+    }
+
+    package static let timerLimit: TimeInterval = 180 * 60
+    /// A stopwatch keeps counting; its clock saturates at the widest reading
+    /// the surface fits, two hour digits.
+    package static let stopwatchLimit: TimeInterval = 100 * 3600 - 1
+
+    package static func timerMinutes(_ value: Int) -> Int { min(180, max(1, value)) }
+
+    package static func savedMode(in defaults: UserDefaults = .standard) -> NotchTimerMode {
+        NotchTimerMode(rawValue: defaults[Preferences.notchTimerMode]) ?? .timer
+    }
+
+    private static func wholeSeconds(_ value: TimeInterval, limit: TimeInterval,
+                                     rounded rule: FloatingPointRoundingRule) -> Int {
+        value.isFinite ? Int(min(limit, max(0, value)).rounded(rule)) : 0
+    }
+
+    private static func clockText(seconds: Int) -> String {
+        if seconds >= 3600 {
+            return String(format: "%d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60)
+        }
+        return String(format: "%02d:%02d", seconds / 60, seconds % 60)
+    }
+
+    package static func clockText(_ remaining: TimeInterval) -> String {
+        clockText(seconds: wholeSeconds(remaining, limit: timerLimit, rounded: .up))
+    }
+
+    /// Elapsed time never rounds up: a stopwatch cannot show a second that
+    /// has not passed yet.
+    package static func stopwatchText(_ elapsed: TimeInterval) -> String {
+        clockText(seconds: wholeSeconds(elapsed, limit: stopwatchLimit, rounded: .down))
+    }
+
+    /// Hours read as "1h35", never "1:35", which beside the minute clock
+    /// would pass for one minute and thirty five seconds.
+    package static func hoursText(hours: Int, minutes: Int) -> String {
+        String(format: "%dh%02d", hours, minutes)
+    }
+
+    package static func compactHoursText(_ remaining: TimeInterval) -> String {
+        let seconds = wholeSeconds(remaining, limit: timerLimit, rounded: .down)
+        return hoursText(hours: seconds / 3600, minutes: seconds / 60 % 60)
+    }
+
+    /// The compact strip keeps a stopwatch's seconds, the reading that shows
+    /// it is alive, until hours take their place.
+    package static func compactStopwatchText(_ elapsed: TimeInterval) -> String {
+        let seconds = wholeSeconds(elapsed, limit: stopwatchLimit, rounded: .down)
+        return seconds >= 3600 ? hoursText(hours: seconds / 3600, minutes: seconds / 60 % 60) : clockText(seconds: seconds)
+    }
+
+    package static func clockText(for session: NotchTimerSession, at now: TimeInterval) -> String {
+        session.countsUp ? stopwatchText(session.reading(at: now)) : clockText(session.reading(at: now))
+    }
+
+    /// What a clock's digits roll on. The closed island can show a clock for
+    /// hours, and rolling every second kept it animating a third of the time,
+    /// at about ten times the energy of a clock that changes in place. There
+    /// the seconds change in place and the rest rolls: "12:04" rolls as "12".
+    package static func rollingValue(_ value: String, everySecond: Bool) -> String {
+        guard !everySecond, let colon = value.lastIndex(of: ":") else { return value }
+        return String(value[..<colon])
+    }
+
+    package static func compactText(for session: NotchTimerSession, at now: TimeInterval, locale: Locale) -> String {
+        let reading = session.reading(at: now)
+        if session.countsUp { return compactStopwatchText(reading) }
+        return reading >= 3600 ? compactHoursText(reading) : compactText(reading, locale: locale)
+    }
+
+    /// Seconds until the reading next crosses a whole second. A tick every
+    /// second from there lands just after each change; ticks spaced from the
+    /// display refresh instead drift across a boundary and skip a value.
+    package static func secondBoundaryOffset(for session: NotchTimerSession, at now: TimeInterval) -> TimeInterval {
+        let reading = session.reading(at: now)
+        guard reading.isFinite else { return 0 }
+        let fraction = reading.truncatingRemainder(dividingBy: 1)
+        let offset = session.countsUp ? 1 - fraction : fraction
+        return offset > 0 ? offset : 1
+    }
+
+    /// Start of the periodic schedule that ticks the clock, relative to now.
+    /// A timeline renders its first entry at once and wakes only at the next,
+    /// so the schedule starts at the boundary already behind the reading: the
+    /// entry that fires is the boundary ahead, never one skipped past.
+    package static func tickScheduleOffset(for session: NotchTimerSession, at now: TimeInterval) -> TimeInterval {
+        secondBoundaryOffset(for: session, at: now) - 1
+    }
+
+    package static func compactText(_ remaining: TimeInterval, locale: Locale) -> String {
+        let seconds = remaining.isFinite ? ceil(min(timerLimit, max(0, remaining))) : 0
+        let units: Set<Duration.UnitsFormatStyle.Unit> = seconds >= 3600
+            ? [.hours, .minutes] : [seconds >= 60 ? .minutes : .seconds]
+        return Duration.seconds(seconds).formatted(.units(
+            allowed: units, width: .narrow,
+            fractionalPart: .hide(rounded: .down)).locale(locale))
+    }
+
+    // MARK: Strip
+
+    /// A wing is never narrower than the music strip's; the longest readings
+    /// keep the width the strip always had.
+    package static let stripWingRange: ClosedRange<CGFloat> = 44...64
+    /// Air between the camera and what sits beside it.
+    package static let stripCameraGap: CGFloat = 6
+
+    package static func stripTextSize(height: CGFloat) -> CGFloat { min(16, height - 6) }
+    /// The mark takes the strip's height less an even gap above and below.
+    package static func stripIconSize(height: CGFloat) -> CGFloat { min(20, height - NotchLayout.compactEdgeGap * 2) }
+}
