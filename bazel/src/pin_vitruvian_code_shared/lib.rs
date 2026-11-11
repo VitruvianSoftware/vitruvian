@@ -40,7 +40,7 @@ pub fn parse_args(args: &[String]) -> Result<Config, String> {
             }
             "-h" | "--help" => {
                 return Err(
-                    "usage: pin_nexus_agent_shared [--check PIN_FILE] [--name tool_protocol] sources..."
+                    "usage: pin_vitruvian_code_shared [--check PIN_FILE] [--name tool_protocol] sources..."
                         .into(),
                 );
             }
@@ -229,7 +229,7 @@ mod tests {
 
     #[test]
     fn test_digest_and_check_pin() {
-        let tmp = env::temp_dir().join("test_pin_nexus_agent_shared_rs");
+        let tmp = env::temp_dir().join("test_pin_vitruvian_code_shared_rs");
         let _ = fs::remove_dir_all(&tmp);
         fs::create_dir_all(&tmp).unwrap();
 
