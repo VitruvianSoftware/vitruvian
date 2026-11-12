@@ -5,7 +5,7 @@ use std::path::Path;
 
 #[test]
 fn test_all_mutation_fixtures_match_real_sources() {
-    let app_dir = Path::new("apps/desktop/vitruvian");
+    let app_dir = Path::new("apps/desktop/vitruvian-atrium");
     let problems = mutation_checks::stale_fixtures(app_dir);
     assert!(
         problems.is_empty(),
@@ -17,7 +17,7 @@ fn test_all_mutation_fixtures_match_real_sources() {
         mutation_checks::run_cli(&[
             "--check".to_string(),
             "--app-dir".to_string(),
-            "apps/desktop/vitruvian".to_string(),
+            "apps/desktop/vitruvian-atrium".to_string(),
         ]),
         0
     );

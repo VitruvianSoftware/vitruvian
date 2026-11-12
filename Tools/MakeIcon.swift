@@ -114,14 +114,14 @@ func renderAppIcon(px: Int) -> Data? {
 
 // MARK: - Menu bar glyph (template)
 
-// The Vitruvian mark is a 1:1 circle. Scale it to 18.0 pt height to fill
+// The Vitruvian Atrium mark is a 1:1 circle. Scale it to 18.0 pt height to fill
 // the 20 pt vertical menu bar canvas with 1 pt edge margin.
 let menuBarGlyphHeight: CGFloat = 18.0
 // Centered vertically on the canvas.
 let menuBarGlyphDrop: CGFloat = 0
 // Taller than the mark needs: the same canvas holds the compact Keep Awake
 // symbols. Keep in sync with BlackHoleGlyph.pointSize in
-// Sources/Vitruvian/UI/BlackHoleGlyph.swift; `--selftest` enforces it.
+// Sources/VitruvianAtrium/UI/BlackHoleGlyph.swift; `--selftest` enforces it.
 let menuBarCanvas = (width: 26, height: 20)
 
 func renderMenuBarIcon(scale: Int) -> Data? {

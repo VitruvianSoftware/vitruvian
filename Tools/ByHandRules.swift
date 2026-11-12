@@ -152,9 +152,9 @@ enum ByHandRules {
     /// The app's own English words this command presses or looks for. The
     /// checks by hand are done with the app in English.
     enum Words {
-        static let settingsWindow = "Vitruvian Settings"
+        static let settingsWindow = "Vitruvian Atrium Settings"
         static let settingsMenuItem = "Settings…"
-        static let quitMenuItem = "Quit Vitruvian"
+        static let quitMenuItem = "Quit Vitruvian Atrium"
         /// The Settings page of the tools from outside, and its title.
         static let extensionsPage = "Extensions"
         static let addTool = "Add from Folder…"
@@ -169,11 +169,11 @@ enum ByHandRules {
     }
 
     static let usage = """
-        by-hand: look at, and press, the controls of the running Vitruvian app
+        by-hand: look at, and press, the controls of the running Vitruvian Atrium app
         from the shell, to do the checks by hand of
         docs/superpowers/specs/2026-10-10-vitruvian-external-tools-design.md.
 
-          bazel run --config=macos-app //apps/desktop/vitruvian:by-hand -- <command>
+          bazel run --config=macos-app //apps/desktop/vitruvian-atrium:by-hand -- <command>
 
         It drives the app that is running, the person's own: say so before you
         start. It finds the app by its bundle id, needs the terminal it runs
@@ -199,7 +199,7 @@ enum ByHandRules {
           choose MENU ITEM [--window W] open the pop-up described MENU, pick ITEM
           scroll-end [--window W]       scroll every list to its end
 
-        Do one step of a check (these send keys, and only while Vitruvian is
+        Do one step of a check (these send keys, and only while Vitruvian Atrium is
         the app the keyboard is on):
           open-settings                 Settings…, from the app's menu
           page TITLE                    the Settings page with that sidebar title
@@ -221,7 +221,7 @@ enum ByHandRules {
           quit | launch                 quit the app from its menu; start it again
 
         W is part of a window's title. Exit status: 0 done; 1 not found, not
-        offered, or the app refused; 2 Vitruvian is not running; 3 this
+        offered, or the app refused; 2 Vitruvian Atrium is not running; 3 this
         terminal has no Accessibility; 64 the command line is wrong.
         """
 

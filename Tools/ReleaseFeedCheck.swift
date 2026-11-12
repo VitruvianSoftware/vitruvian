@@ -7,8 +7,8 @@
 // opens. With --verify-download it also downloads that image and checks it
 // the way the installer does before it swaps anything.
 //
-//   bazel run --config=macos-app //apps/desktop/vitruvian:release_feed_check
-//   bazel run --config=macos-app //apps/desktop/vitruvian:release_feed_check -- --verify-download
+//   bazel run --config=macos-app //apps/desktop/vitruvian-atrium:release_feed_check
+//   bazel run --config=macos-app //apps/desktop/vitruvian-atrium:release_feed_check -- --verify-download
 //
 // A bare binary reports its version as "dev", which every release is newer
 // than, so the check always names the newest stable release.
@@ -20,8 +20,8 @@
 // lists every request the check made.
 
 import Foundation
-import VitruvianCore
-import VitruvianServices
+import VitruvianAtriumCore
+import VitruvianAtriumServices
 
 let verifyDownload = CommandLine.arguments.contains("--verify-download")
 /// The newest stable release on the day this check was written.
@@ -83,7 +83,7 @@ nonisolated final class RequestLog: @unchecked Sendable {
 /// does not spend any of it.
 func apiQuota() -> String {
     var request = URLRequest(url: URL(string: "https://api.github.com/rate_limit")!)
-    request.setValue("Vitruvian-release-feed-check", forHTTPHeaderField: "User-Agent")
+    request.setValue("VitruvianAtrium-release-feed-check", forHTTPHeaderField: "User-Agent")
     nonisolated(unsafe) var text = "unknown"
     nonisolated(unsafe) var finished = false
     URLSession.shared.dataTask(with: request) { data, _, _ in
@@ -103,13 +103,13 @@ func apiQuota() -> String {
 }
 
 let log = RequestLog()
-let transport: VitruvianReleases.Transport = { request in
+let transport: VitruvianAtriumReleases.Transport = { request in
     if request.url?.host == "api.github.com" {
         log.add(request, "refused here: 403, no requests left")
-        return VitruvianReleases.Reply(status: 403, headers: ["x-ratelimit-remaining": "0"])
+        return VitruvianAtriumReleases.Reply(status: 403, headers: ["x-ratelimit-remaining": "0"])
     }
     do {
-        let reply = try await VitruvianReleases.live(request)
+        let reply = try await VitruvianAtriumReleases.live(request)
         let length = reply.header("Content-Length").map { ", Content-Length \($0)" } ?? ""
         log.add(request, "HTTP \(reply.status), \(reply.body.count) bytes\(length)")
         return reply
@@ -131,7 +131,7 @@ MainActor.assumeIsolated {
     report(!log.entries.isEmpty && !log.entries.contains { $0.host == "api.github.com" },
            "the check made no request to api.github.com")
     report(log.entries.first?.host == "github.com"
-           && log.entries.first?.line.hasPrefix("POST \(VitruvianReleases.tagListURL.absoluteString)") == true,
+           && log.entries.first?.line.hasPrefix("POST \(VitruvianAtriumReleases.tagListURL.absoluteString)") == true,
            "its first request lists the tags from git")
     var offered: (version: String, url: URL)?
     switch service.state {
@@ -139,7 +139,7 @@ MainActor.assumeIsolated {
         report(!UpdateServiceSupport.isNewer(oldestAcceptable, than: version),
                "newest stable release is \(version) (\(oldestAcceptable) or newer expected)")
         if let url = service.downloadURL {
-            report(url.lastPathComponent == VitruvianReleases.diskImageName(version: version),
+            report(url.lastPathComponent == VitruvianAtriumReleases.diskImageName(version: version),
                    "it would download \(url.absoluteString)")
             offered = (version, url)
         } else {
@@ -182,7 +182,7 @@ MainActor.assumeIsolated {
     let imageCheck = run("/usr/bin/codesign",
                          ["-v", "--strict", "-R=\(UpdateInstallerSupport.diskImageRequirement)", image.path])
     report(imageCheck.status == 0,
-           "the disk image is signed by Vitruvian's team (installer step fail-dmg-verify) \(imageCheck.output.trimmingCharacters(in: .whitespacesAndNewlines))")
+           "the disk image is signed by Vitruvian Atrium's team (installer step fail-dmg-verify) \(imageCheck.output.trimmingCharacters(in: .whitespacesAndNewlines))")
 
     let mount = folder.appendingPathComponent("mount", isDirectory: true)
     try? FileManager.default.createDirectory(at: mount, withIntermediateDirectories: true)
@@ -191,7 +191,7 @@ MainActor.assumeIsolated {
     report(attach.status == 0, "the disk image mounts")
     guard attach.status == 0 else { return }
     defer { run("/usr/bin/hdiutil", ["detach", mount.path, "-quiet", "-force"]) }
-    let app = mount.appendingPathComponent("Vitruvian.app")
+    let app = mount.appendingPathComponent("Vitruvian Atrium.app")
     let plist = NSDictionary(contentsOf: app.appendingPathComponent("Contents/Info.plist"))
     let bundleVersion = plist?["CFBundleShortVersionString"] as? String
     report(bundleVersion == offered.version,
@@ -199,11 +199,11 @@ MainActor.assumeIsolated {
     let appCheck = run("/usr/bin/codesign",
                        ["-v", "--deep", "--strict", "-R=\(UpdateInstallerSupport.appRequirement)", app.path])
     report(appCheck.status == 0,
-           "the app is signed by Vitruvian's team (installer step fail-verify) \(appCheck.output.trimmingCharacters(in: .whitespacesAndNewlines))")
+           "the app is signed by Vitruvian Atrium's team (installer step fail-verify) \(appCheck.output.trimmingCharacters(in: .whitespacesAndNewlines))")
     let gatekeeper = run("/usr/sbin/spctl", ["-a", "-t", "exec", "-vv", app.path])
     report(gatekeeper.status == 0,
            "Gatekeeper accepts the app (installer step fail-verify): \(gatekeeper.output.trimmingCharacters(in: .whitespacesAndNewlines))")
-    let universal = run("/usr/bin/lipo", ["-archs", app.appendingPathComponent("Contents/MacOS/Vitruvian").path])
+    let universal = run("/usr/bin/lipo", ["-archs", app.appendingPathComponent("Contents/MacOS/VitruvianAtrium").path])
     report(universal.output.contains("x86_64") && universal.output.contains("arm64"),
            "the app is universal: \(universal.output.trimmingCharacters(in: .whitespacesAndNewlines))")
 }

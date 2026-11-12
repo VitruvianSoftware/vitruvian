@@ -128,7 +128,7 @@ pub fn transform_upstream_info_plist(source_path: &Path, xml: &str) -> Result<St
         .ok_or_else(|| format!("{}: missing closing </dict>", source_path.display()))?;
     let mut final_xml = String::with_capacity(updated.len() + 128);
     final_xml.push_str(&updated[..dict_close]);
-    final_xml.push_str("\t<key>VitruvianUpstreamVersion</key>\n\t<string>");
+    final_xml.push_str("\t<key>VitruvianAtriumUpstreamVersion</key>\n\t<string>");
     final_xml.push_str(version);
     final_xml.push_str("</string>\n");
     final_xml.push_str(&updated[dict_close..]);
@@ -258,9 +258,9 @@ mod tests {
 ";
         let out = transform_upstream_info_plist(Path::new("Info.plist"), src).unwrap();
         assert!(out.contains("<key>CFBundleShortVersionString</key>\n\t<string>3.4.1</string>"));
-        assert!(
-            out.contains("<key>VitruvianUpstreamVersion</key>\n\t<string>3.4.1-beta.1</string>")
-        );
+        assert!(out.contains(
+            "<key>VitruvianAtriumUpstreamVersion</key>\n\t<string>3.4.1-beta.1</string>"
+        ));
     }
 
     #[test]

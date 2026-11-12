@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 VitruvianSoftware
 
-//! Generate Vitruvian's placeholder brand masters (`logo.png`,
+//! Generate Vitruvian Atrium's placeholder brand masters (`logo.png`,
 //! `AppIcon-Default.png`, `AppIcon.icon/Assets/vitruvian-mark.svg`, and
 //! `AppIcon.icon/icon.json`).
 //!
@@ -279,7 +279,7 @@ pub fn icon_composer_project_json() -> &'static str {
             "solid": "srgb:1.00000,1.00000,1.00000,1.00000"
           },
           "image-name": "vitruvian-mark.svg",
-          "name": "VitruvianMark",
+          "name": "VitruvianAtriumMark",
           "position": {
             "scale": 1.0,
             "translation-in-points": [
@@ -348,9 +348,9 @@ pub fn run_cli(args: &[String]) -> i32 {
 
     let dir = out_dir.unwrap_or_else(|| {
         if let Ok(ws) = env::var("BUILD_WORKSPACE_DIRECTORY") {
-            PathBuf::from(ws).join("apps/desktop/vitruvian/Resources/Brand")
+            PathBuf::from(ws).join("apps/desktop/vitruvian-atrium/Resources/Brand")
         } else {
-            PathBuf::from("apps/desktop/vitruvian/Resources/Brand")
+            PathBuf::from("apps/desktop/vitruvian-atrium/Resources/Brand")
         }
     });
 
@@ -369,7 +369,7 @@ mod tests {
 
     #[test]
     fn test_svg_and_icon_json_match_committed_brand_assets() {
-        let brand_dir = Path::new("apps/desktop/vitruvian/Resources/Brand");
+        let brand_dir = Path::new("apps/desktop/vitruvian-atrium/Resources/Brand");
         if brand_dir.join("AppIcon.icon/icon.json").exists() {
             let committed_json =
                 fs::read_to_string(brand_dir.join("AppIcon.icon/icon.json")).unwrap();

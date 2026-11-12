@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 //! Native Rust implementation of `Tools/uninstall.sh`.
-//! Cleanly removes Vitruvian and every piece of system state it created:
+//! Cleanly removes Vitruvian Atrium and every piece of system state it created:
 //! the fan helper daemon, login item, TCC permissions, preferences, saved state,
 //! application data, closed-lid sudoers rules, and checks sleep/Space arrangement recovery.
 
@@ -13,13 +13,9 @@ use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
-pub const DEFAULT_BUNDLE_ID: &str = "com.vitruviansoftware.vitruvian";
-pub const DEFAULT_APP_PATH: &str = "/Applications/Vitruvian.app";
-pub const CLOSED_LID_RULE_PATHS: &[&str] = &[
-    "/etc/sudoers.d/vitruvian-clamshell",
-    "/etc/sudoers.d/vitruvian-utils-clamshell",
-    "/etc/sudoers.d/vitru-clamshell",
-];
+pub const DEFAULT_BUNDLE_ID: &str = "com.vitruviansoftware.atrium";
+pub const DEFAULT_APP_PATH: &str = "/Applications/Vitruvian Atrium.app";
+pub const CLOSED_LID_RULE_PATHS: &[&str] = &["/etc/sudoers.d/vitruvian-atrium-clamshell"];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UninstallConfig {
@@ -354,7 +350,7 @@ pub fn run_cli(args: &[String]) -> i32 {
     };
 
     if cfg.dry_run {
-        println!("dry-run: pkill -x Vitruvian");
+        println!("dry-run: pkill -x VitruvianAtrium");
         for p in user_state_paths(&cfg.home_dir, &cfg.bundle_id) {
             println!("dry-run: remove {}", p.display());
         }
@@ -362,12 +358,14 @@ pub fn run_cli(args: &[String]) -> i32 {
     }
 
     println!("▸ Quitting…");
-    let _ = Command::new("pkill").args(["-x", "Vitruvian"]).output();
+    let _ = Command::new("pkill")
+        .args(["-x", "VitruvianAtrium"])
+        .output();
     thread::sleep(Duration::from_millis(500));
 
     let mut detached = true;
     let mut ran_app = false;
-    let candidate = cfg.app_path.join("Contents/MacOS/Vitruvian");
+    let candidate = cfg.app_path.join("Contents/MacOS/VitruvianAtrium");
     if candidate.is_file() {
         println!(
             "▸ Detaching the fan helper and login item, restoring sleep and Space rearranging…"
@@ -446,7 +444,7 @@ pub fn run_cli(args: &[String]) -> i32 {
         println!("▸ Removing closed-lid sudoers rule (asks for your admin password)…");
         let joined = found_rules.join(" ");
         let script = format!(
-            "do shell script \"rm -f {}\" with administrator privileges with prompt \"Vitruvian uninstaller\"",
+            "do shell script \"rm -f {}\" with administrator privileges with prompt \"Vitruvian Atrium uninstaller\"",
             joined
         );
         let _ = Command::new("osascript").args(["-e", &script]).status();
@@ -472,42 +470,44 @@ pub fn run_cli(args: &[String]) -> i32 {
     };
 
     if warnings.is_clean() {
-        println!("✓ Vitruvian fully removed.");
+        println!("✓ Vitruvian Atrium fully removed.");
         return 0;
     }
 
     if warnings.fan_helper_still_registered {
-        eprintln!("⚠ Vitruvian removed, but its fan helper is still registered with the system.");
         eprintln!(
-            "  Reinstall Vitruvian, then use Settings › Advanced to uninstall from inside the app."
+            "⚠ Vitruvian Atrium removed, but its fan helper is still registered with the system."
+        );
+        eprintln!(
+            "  Reinstall Vitruvian Atrium, then use Settings › Advanced to uninstall from inside the app."
         );
     }
     if warnings.sleep_stuck {
-        eprintln!("⚠ Vitruvian removed, but this Mac still has sleep switched off.");
+        eprintln!("⚠ Vitruvian Atrium removed, but this Mac still has sleep switched off.");
         eprintln!("  Closed-lid mode disabled it, and restoring it needed a password this script could not ask for.");
         eprintln!("  Put it back with: sudo pmset disablesleep 0");
     }
     if warnings.sleep_unknown {
-        eprintln!("⚠ Vitruvian removed, but whether sleep came back could not be read.");
+        eprintln!("⚠ Vitruvian Atrium removed, but whether sleep came back could not be read.");
         eprintln!(
             "  Closed-lid mode had switched it off. Check with: pmset -g | grep SleepDisabled"
         );
         eprintln!("  If that reads 1, put it back with: sudo pmset disablesleep 0");
     }
     if warnings.spaces_stuck {
-        eprintln!("⚠ Vitruvian removed, but Spaces are still kept in a fixed order.");
+        eprintln!("⚠ Vitruvian Atrium removed, but Spaces are still kept in a fixed order.");
         eprintln!("  Fixed Space order had turned rearranging off, and it was not put back.");
         eprintln!("  Turn it back on in System Settings › Desktop & Dock with");
         eprintln!("  \"Automatically rearrange Spaces based on most recent use\".");
     }
     if warnings.spaces_unloaded {
-        eprintln!("⚠ Vitruvian removed, but the Dock still keeps Spaces in a fixed order.");
+        eprintln!("⚠ Vitruvian Atrium removed, but the Dock still keeps Spaces in a fixed order.");
         eprintln!("  Space rearranging was put back on, and the Dock reads it when it restarts.");
         eprintln!("  Log out and back in to finish.");
     }
     if warnings.spaces_unknown {
         eprintln!(
-            "Vitruvian removed, but whether Space rearranging was restored could not be confirmed."
+            "Vitruvian Atrium removed, but whether Space rearranging was restored could not be confirmed."
         );
         eprintln!(
             "Check Automatically rearrange Spaces based on most recent use in System Settings."
@@ -532,7 +532,7 @@ mod tests {
             std::process::id(),
             nanos
         ));
-        let bundle = "com.vitruviansoftware.vitruvian";
+        let bundle = "com.vitruviansoftware.atrium";
 
         fs::create_dir_all(scratch.join("Library/Preferences/ByHost")).unwrap();
         fs::create_dir_all(scratch.join(format!(
@@ -595,16 +595,13 @@ mod tests {
         ));
         let sudoers = scratch.join("etc/sudoers.d");
         fs::create_dir_all(&sudoers).unwrap();
-        fs::write(sudoers.join("vitruvian-clamshell"), "rule1").unwrap();
-        fs::write(sudoers.join("vitru-clamshell"), "rule2").unwrap();
+        fs::write(sudoers.join("vitruvian-atrium-clamshell"), "rule1").unwrap();
+        fs::write(sudoers.join("vitru-clamshell"), "legacy").unwrap();
 
         let found = find_closed_lid_rules(&scratch);
         assert_eq!(
             found,
-            vec![
-                "/etc/sudoers.d/vitruvian-clamshell".to_string(),
-                "/etc/sudoers.d/vitru-clamshell".to_string(),
-            ]
+            vec!["/etc/sudoers.d/vitruvian-atrium-clamshell".to_string()]
         );
         let _ = fs::remove_dir_all(&scratch);
     }

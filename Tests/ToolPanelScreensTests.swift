@@ -2,10 +2,10 @@
 // Copyright (C) 2026 VitruvianSoftware
 
 import Foundation
-import VitruvianCore
-import VitruvianServices
+import VitruvianAtriumCore
+import VitruvianAtriumServices
 import VitruvianToolProtocol
-import VitruvianUI
+import VitruvianAtriumUI
 
 /// A page as the app draws it, checked as the plain value the view draws:
 /// the person's language, the line limits, the defaults, a picture found
@@ -334,7 +334,7 @@ extension ToolPanelScreensTests {
         }
     }
 
-    /// HomeSpeaker's networks as chips: one muted, one it cannot mute.
+    /// Vitruvian Speaker's networks as chips: one muted, one it cannot mute.
     static let networks = #"""
         {"blocks": [
           {"type": "chips", "id": "muted", "title": {"en": "Read aloud", "de": "Vorlesen"},

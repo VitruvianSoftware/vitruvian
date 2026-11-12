@@ -1725,7 +1725,7 @@ pub fn plist_short_version(r: &mut dyn Runner, plist: &Path) -> Result<String, i
     Ok(v)
 }
 
-/// The package folder (`apps/desktop/vitruvian`) under the workspace that
+/// The package folder (`apps/desktop/vitruvian-atrium`) under the workspace that
 /// `bazel run` was started in, else the git checkout, else the current
 /// folder.
 pub fn workspace_root() -> PathBuf {
@@ -1746,7 +1746,7 @@ pub fn workspace_root() -> PathBuf {
     std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
 }
 
-pub const PKG_REL: &str = "apps/desktop/vitruvian";
+pub const PKG_REL: &str = "apps/desktop/vitruvian-atrium";
 
 pub fn package_dir() -> PathBuf {
     workspace_root().join(PKG_REL)

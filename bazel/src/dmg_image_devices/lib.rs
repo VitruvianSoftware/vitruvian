@@ -86,7 +86,7 @@ mounting user   : runner
 mounting mode   : <unknown>
 process ID      : 41001
 /dev/disk5          \tGUID_partition_scheme          \t
-/dev/disk5s1        \t48465300-0000-11AA-AA11-00306543ECAC\t/Volumes/Vitruvian
+/dev/disk5s1        \t48465300-0000-11AA-AA11-00306543ECAC\t/Volumes/Vitruvian Atrium
 ================================================
 image-path      : /private/var/folders/xx/T/tmp.build/rw.dmg
 image-alias     : /private/var/folders/xx/T/tmp.build/rw.dmg
@@ -109,7 +109,7 @@ process ID      : 41203
 image-path      : /private/var/folders/xx/T/tmp.multi/rw.dmg
 /dev/disk12         \tGUID_partition_scheme          \t
 /dev/disk12s1       \tEFI                            \t
-/dev/disk12s2       \tApple_HFS                      \t/Volumes/Vitruvian 1
+/dev/disk12s2       \tApple_HFS                      \t/Volumes/Vitruvian Atrium 1
 ================================================
 image-path      : /var/folders/xx/T/tmp.multi/rw.dmg
 /dev/disk14         \tApple_HFS                      \t

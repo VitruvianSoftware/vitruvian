@@ -5,7 +5,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Vitruvian",
+    name: "VitruvianAtrium",
     platforms: [.macOS(.v14)],
     targets: [
         .systemLibrary(
@@ -17,9 +17,9 @@ let package = Package(
             path: "Sources/VMStatisticsCompat"
         ),
         .executableTarget(
-            name: "Vitruvian",
+            name: "VitruvianAtrium",
             dependencies: ["VMStatisticsCompat", "HIDEventSystem"],
-            path: "Sources/Vitruvian"
+            path: "Sources/VitruvianAtrium"
         )
     ]
 )

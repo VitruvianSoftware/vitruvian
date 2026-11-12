@@ -4,7 +4,7 @@
 //! Generate the test sources that list what the app declares.
 //!
 //! Native Rust counterpart to `Tests/generate_sources.py`. Extracts every
-//! `FeatureStrings` language factory from `Sources/Vitruvian/Core/*Strings.swift`
+//! `FeatureStrings` language factory from `Sources/VitruvianAtrium/Core/*Strings.swift`
 //! and writes `LocalizationCatalog.swift` to the output directory while pruning
 //! stale `*.swift` files.
 
@@ -20,9 +20,9 @@ pub struct Config {
 
 pub fn default_app_dir() -> PathBuf {
     if let Ok(ws) = env::var("BUILD_WORKSPACE_DIRECTORY") {
-        PathBuf::from(ws).join("apps/desktop/vitruvian")
-    } else if Path::new("apps/desktop/vitruvian/Sources/Vitruvian/Core").is_dir() {
-        PathBuf::from("apps/desktop/vitruvian")
+        PathBuf::from(ws).join("apps/desktop/vitruvian-atrium")
+    } else if Path::new("apps/desktop/vitruvian-atrium/Sources/VitruvianAtrium/Core").is_dir() {
+        PathBuf::from("apps/desktop/vitruvian-atrium")
     } else {
         env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
     }
@@ -263,7 +263,7 @@ pub fn extract_factory_names_from_scope(scope: &str) -> Vec<String> {
 }
 
 pub fn collect_factories(app_dir: &Path) -> Result<Vec<String>, String> {
-    let core_dir = app_dir.join("Sources/Vitruvian/Core");
+    let core_dir = app_dir.join("Sources/VitruvianAtrium/Core");
     let entries = fs::read_dir(&core_dir)
         .map_err(|e| format!("failed to read {}: {}", core_dir.display(), e))?;
     let mut paths: Vec<PathBuf> = entries
@@ -382,7 +382,7 @@ mod tests {
     fn test_extract_factories_and_prune_stale_files() {
         let tmp = env::temp_dir().join("test_vitruvian_generate_sources_rs_unit");
         let _ = fs::remove_dir_all(&tmp);
-        let core_dir = tmp.join("Sources/Vitruvian/Core");
+        let core_dir = tmp.join("Sources/VitruvianAtrium/Core");
         let out_dir = tmp.join("build/generated-tests");
         fs::create_dir_all(&core_dir).unwrap();
         fs::create_dir_all(&out_dir).unwrap();
@@ -416,7 +416,7 @@ mod tests {
     fn test_missing_or_duplicate_factories_rejected() {
         let tmp = env::temp_dir().join("test_vitruvian_generate_sources_rs_err");
         let _ = fs::remove_dir_all(&tmp);
-        let core_dir = tmp.join("Sources/Vitruvian/Core");
+        let core_dir = tmp.join("Sources/VitruvianAtrium/Core");
         let out_dir = tmp.join("build/generated-tests");
         fs::create_dir_all(&core_dir).unwrap();
 
@@ -449,8 +449,8 @@ mod tests {
 
     #[test]
     fn test_generate_from_committed_sources() {
-        let app_dir = Path::new("apps/desktop/vitruvian");
-        if !app_dir.join("Sources/Vitruvian/Core").is_dir() {
+        let app_dir = Path::new("apps/desktop/vitruvian-atrium");
+        if !app_dir.join("Sources/VitruvianAtrium/Core").is_dir() {
             return;
         }
         let tmp = env::temp_dir().join("test_vitruvian_generate_sources_committed");

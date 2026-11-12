@@ -3,8 +3,8 @@
 
 import Darwin
 import Foundation
-import VitruvianCore
-import VitruvianServices
+import VitruvianAtriumCore
+import VitruvianAtriumServices
 import VitruvianToolProtocol
 
 /// Adding a tool from a folder: its two folders, the store that holds what
@@ -53,7 +53,7 @@ enum ExternalToolStoreTests {
         aStatusReachesTheHostAndGoesWithTheProgram(suite)
         aSettingCarriesItsOptions(suite)
         aValueThatIsNoOptionIsStillSaved(suite)
-        homeSpeakerDoorClearedOnRemove(suite)
+        vitruvianSpeakerDoorClearedOnRemove(suite)
     }
 
     static let id = ExternalToolTests.id
@@ -84,9 +84,6 @@ enum ExternalToolStoreTests {
         /// been started by then, and each it said it removed.
         var added: [(id: ToolID, programStarted: Bool)] = []
         var removed: [ToolID] = []
-        /// What the store does at launch about a tool whose id was renamed,
-        /// when a test stands in for it; nothing otherwise.
-        var renamed: ((ToolFolders) -> Void)?
         /// What the store waits for before it adds a tool, when a test
         /// stands in for it; nothing otherwise.
         var beforeAdding: ((ToolID, @escaping @MainActor () -> Void) -> Void)?
@@ -152,8 +149,7 @@ enum ExternalToolStoreTests {
                 added: { [unowned self] installed, _ in
                     added.append((installed.tool.manifest.id, !started.isEmpty))
                 },
-                removed: { [unowned self] in removed.append($0) },
-                renamed: { [unowned self] in renamed?($0) }))
+                removed: { [unowned self] in removed.append($0) }))
             panels = ToolPanelHost(parts: .init(
                 clock: clock, limits: limits,
                 tool: { [unowned self] in store.tool($0) },
@@ -741,7 +737,7 @@ enum ExternalToolStoreTests {
                          && after.store.listed.isEmpty && !after.exists(after.files) && !after.exists(after.data),
                      "a tool that is held back is removed like any other")
 
-        let domain = "com.vitruviansoftware.vitruvian.tests.tool-store"
+        let domain = "com.vitruviansoftware.atrium.tests.tool-store"
         let defaults = ScratchDefaults.suite(named: domain)!
         defaults.removePersistentDomain(forName: domain)
         defer { defaults.removePersistentDomain(forName: domain) }
@@ -1967,7 +1963,7 @@ extension ExternalToolStoreTests {
                      "and one that was there already is read as it is, and left as it is")
     }
 
-    static func homeSpeakerDoorClearedOnRemove(_ suite: TestSuite) {
+    static func vitruvianSpeakerDoorClearedOnRemove(_ suite: TestSuite) {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("vitruvian-door-test-\(UUID().uuidString)", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -1979,10 +1975,10 @@ extension ExternalToolStoreTests {
                 "version": 1,
                 "chosen": chosen,
                 "chosen_at": "2026-10-20T09:12:00Z",
-                "chosen_by": "HomeSpeaker \(chosen) 1.19.0",
+                "chosen_by": "Vitruvian Speaker \(chosen) 1.19.0",
                 "extension": [
-                    "program": "/Users/test/Tools/dev.vitruvian.homespeaker/bin/tool",
-                    "data_folder": "/Users/test/ToolData/dev.vitruvian.homespeaker",
+                    "program": "/Users/test/Tools/dev.vitruvian.speaker/bin/tool",
+                    "data_folder": "/Users/test/ToolData/dev.vitruvian.speaker",
                     "version": "1.19.0",
                     "door": 1,
                 ],
@@ -1995,16 +1991,16 @@ extension ExternalToolStoreTests {
             return (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
         }
 
-        // 1. toolID != "dev.vitruvian.homespeaker": leaves the file untouched.
+        // 1. toolID != "dev.vitruvian.speaker": leaves the file untouched.
         writeDoor(chosen: "extension")
-        ExternalToolStore.clearHomeSpeakerDoorOnRemove(toolID: "com.acme.deploys", doorFileURL: doorURL)
+        ExternalToolStore.clearVitruvianSpeakerDoorOnRemove(toolID: "com.acme.deploys", doorFileURL: doorURL)
         let untouched = readDoor()
         suite.expect(untouched?["chosen"] as? String == "extension"
                          && untouched?["extension"] != nil,
                      "removing another tool leaves speaker_door.json untouched")
 
         // 2. chosen == "extension": removes extension, chosen, chosen_at, and chosen_by.
-        ExternalToolStore.clearHomeSpeakerDoorOnRemove(toolID: "dev.vitruvian.homespeaker", doorFileURL: doorURL)
+        ExternalToolStore.clearVitruvianSpeakerDoorOnRemove(toolID: "dev.vitruvian.speaker", doorFileURL: doorURL)
         let clearedExtension = readDoor()
         suite.expect(clearedExtension?["version"] as? Int == 1
                          && clearedExtension?["extension"] == nil
@@ -2012,24 +2008,24 @@ extension ExternalToolStoreTests {
                          && clearedExtension?["chosen_at"] == nil
                          && clearedExtension?["chosen_by"] == nil
                          && FileManager.default.fileExists(atPath: doorURL.appendingPathExtension("lock").path),
-                     "removing dev.vitruvian.homespeaker when chosen is extension clears extension and chosen fields under the lock")
+                     "removing dev.vitruvian.speaker when chosen is extension clears extension and chosen fields under the lock")
 
         // 3. chosen == "app": removes extension, preserves chosen, chosen_at, and chosen_by.
         writeDoor(chosen: "app")
-        ExternalToolStore.clearHomeSpeakerDoorOnRemove(toolID: "dev.vitruvian.homespeaker", doorFileURL: doorURL)
+        ExternalToolStore.clearVitruvianSpeakerDoorOnRemove(toolID: "dev.vitruvian.speaker", doorFileURL: doorURL)
         let clearedApp = readDoor()
         suite.expect(clearedApp?["version"] as? Int == 1
                          && clearedApp?["extension"] == nil
                          && clearedApp?["chosen"] as? String == "app"
                          && clearedApp?["chosen_at"] as? String == "2026-10-20T09:12:00Z"
-                         && clearedApp?["chosen_by"] as? String == "HomeSpeaker app 1.19.0",
-                     "removing dev.vitruvian.homespeaker when chosen is app removes extension and keeps the app choice")
+                         && clearedApp?["chosen_by"] as? String == "Vitruvian Speaker app 1.19.0",
+                     "removing dev.vitruvian.speaker when chosen is app removes extension and keeps the app choice")
 
         // 4. File does not exist: no-op and does not create the file.
         let missingURL = dir.appendingPathComponent("nonexistent/speaker_door.json")
-        ExternalToolStore.clearHomeSpeakerDoorOnRemove(toolID: "dev.vitruvian.homespeaker", doorFileURL: missingURL)
+        ExternalToolStore.clearVitruvianSpeakerDoorOnRemove(toolID: "dev.vitruvian.speaker", doorFileURL: missingURL)
         suite.expect(!FileManager.default.fileExists(atPath: missingURL.path)
                          && !FileManager.default.fileExists(atPath: missingURL.appendingPathExtension("lock").path),
-                     "removing dev.vitruvian.homespeaker when speaker_door.json does not exist writes nothing")
+                     "removing dev.vitruvian.speaker when speaker_door.json does not exist writes nothing")
     }
 }

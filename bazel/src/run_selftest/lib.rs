@@ -168,12 +168,12 @@ mod tests {
     #[test]
     fn test_select_bundle_candidate() {
         assert_eq!(
-            select_bundle_candidate(&["launcher".to_string(), "Vitruvian.app".to_string()]),
-            Some("Vitruvian.app".to_string())
+            select_bundle_candidate(&["launcher".to_string(), "Vitruvian Atrium.app".to_string()]),
+            Some("Vitruvian Atrium.app".to_string())
         );
         assert_eq!(
-            select_bundle_candidate(&["launcher".to_string(), "Vitruvian.zip".to_string()]),
-            Some("Vitruvian.zip".to_string())
+            select_bundle_candidate(&["launcher".to_string(), "VitruvianAtrium.zip".to_string()]),
+            Some("VitruvianAtrium.zip".to_string())
         );
         assert_eq!(select_bundle_candidate(&["launcher".to_string()]), None);
     }
@@ -187,7 +187,7 @@ mod tests {
         // Missing bundle outputs -> exit 2
         assert_eq!(
             run_cli_with_tools(
-                &["Vitruvian".to_string(), "not_a_bundle".to_string()],
+                &["VitruvianAtrium".to_string(), "not_a_bundle".to_string()],
                 "/usr/bin/true",
                 "/usr/bin/true"
             ),
@@ -200,7 +200,7 @@ mod tests {
         assert_eq!(
             run_cli_with_tools(
                 &[
-                    "Vitruvian".to_string(),
+                    "VitruvianAtrium".to_string(),
                     empty_app.to_string_lossy().to_string()
                 ],
                 "/usr/bin/true",
@@ -213,7 +213,7 @@ mod tests {
         let valid_app = tmp.join("Valid.app");
         let macos_dir = valid_app.join("Contents/MacOS");
         fs::create_dir_all(&macos_dir).unwrap();
-        let exe = macos_dir.join("Vitruvian");
+        let exe = macos_dir.join("VitruvianAtrium");
         fs::write(
             &exe,
             "#!/bin/sh\ntest \"$1\" = \"--selftest\" && exit 0\nexit 3\n",
@@ -230,7 +230,7 @@ mod tests {
         assert_eq!(
             run_cli_with_tools(
                 &[
-                    "Vitruvian".to_string(),
+                    "VitruvianAtrium".to_string(),
                     valid_app.to_string_lossy().to_string()
                 ],
                 "/usr/bin/true",

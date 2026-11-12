@@ -7,15 +7,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Vitruvian</string>
+	<string>Vitruvian Atrium</string>
 	<key>CFBundleExecutable</key>
-	<string>Vitruvian</string>
+	<string>VitruvianAtrium</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIconName</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.vitruviansoftware.vitruvian</string>
+	<string>com.vitruviansoftware.atrium</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleLocalizations</key>
@@ -37,7 +37,7 @@
 		<string>zh-HK</string>
 	</array>
 	<key>CFBundleName</key>
-	<string>Vitruvian</string>
+	<string>Vitruvian Atrium</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -55,33 +55,33 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Vitruvian uses Automation to move files, send items to the Trash, open requested commands and control playback in your media apps.</string>
+	<string>Vitruvian Atrium uses Automation to move files, send items to the Trash, open requested commands and control playback in your media apps.</string>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>Vitruvian uses each app's audio to adjust its volume in the mixer, to move Dynamic Island's music bars and to include the Mac's sound in the screen recordings you start. Nothing leaves your Mac.</string>
+	<string>Vitruvian Atrium uses each app's audio to adjust its volume in the mixer, to move Dynamic Island's music bars and to include the Mac's sound in the screen recordings you start. Nothing leaves your Mac.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Vitruvian uses Bluetooth only to read the battery level of connected peripherals. Nothing leaves your Mac.</string>
+	<string>Vitruvian Atrium uses Bluetooth only to read the battery level of connected peripherals. Nothing leaves your Mac.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_googlecast._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Vitruvian lets the HomeSpeaker extension find your Google Home and Nest speakers on this network to play announcements in the voice you chose.</string>
+	<string>Vitruvian Atrium lets the Vitruvian Speaker extension find your Google Home and Nest speakers on this network to play announcements in the voice you chose.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Vitruvian records your microphone only when you turn it on for a screen recording. The audio stays on your Mac unless you choose to create a temporary link.</string>
+	<string>Vitruvian Atrium records your microphone only when you turn it on for a screen recording. The audio stays on your Mac unless you choose to create a temporary link.</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
 	<string>Show your upcoming appointments in the notch. Calendar events stay on this Mac.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Vitruvian shows your camera only in the preview window you open, so you can check how you look before a call. Nothing is recorded or leaves your Mac.</string>
+	<string>Vitruvian Atrium shows your camera only in the preview window you open, so you can check how you look before a call. Nothing is recorded or leaves your Mac.</string>
 	<key>NSDownloadsFolderUsageDescription</key>
-	<string>Vitruvian checks local metadata in Downloads to review, organize or trash only confirmed WhatsApp files you choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Vitruvian Atrium checks local metadata in Downloads to review, organize or trash only confirmed WhatsApp files you choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
 	<key>NSDesktopFolderUsageDescription</key>
-	<string>Vitruvian organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Vitruvian Atrium organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
-	<string>Vitruvian organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Vitruvian Atrium organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
 	<key>NSNetworkVolumesUsageDescription</key>
-	<string>Vitruvian organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Vitruvian Atrium organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
 	<key>NSRemovableVolumesUsageDescription</key>
-	<string>Vitruvian organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
+	<string>Vitruvian Atrium organizes confirmed WhatsApp downloads in a destination folder you explicitly choose. The Cleaner also looks for forgotten screenshots when you save screenshots here.</string>
 	<key>NSCameraUseContinuityCameraDeviceType</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>

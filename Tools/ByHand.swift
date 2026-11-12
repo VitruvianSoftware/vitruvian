@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 VitruvianSoftware
 
-// Looks at, and presses, the controls of the running Vitruvian app from the
+// Looks at, and presses, the controls of the running Vitruvian Atrium app from the
 // shell, through the macOS Accessibility API. It is how the checks by hand
 // of the tools-from-outside work were done on 2026-10-12, kept as one
 // command. AGENTS.md, "Checking the app by hand, from the shell", says how
 // to use it; `ByHandRules.usage` is what it prints.
 //
-//   bazel run --config=macos-app //apps/desktop/vitruvian:by-hand -- <command>
+//   bazel run --config=macos-app //apps/desktop/vitruvian-atrium:by-hand -- <command>
 //
 // A development tool: `manual`, in no bundle and no release. It links
 // nothing of the app and finds the app by its bundle id. It never asks for,
@@ -19,7 +19,7 @@
 import AppKit
 import ApplicationServices
 
-let bundleID = "com.vitruviansoftware.vitruvian"
+let bundleID = "com.vitruviansoftware.atrium"
 typealias Words = ByHandRules.Words
 
 enum Exit: Int32 {
@@ -63,7 +63,7 @@ func runningApp() -> NSRunningApplication? {
 
 /// The running app, or the end of the command.
 func theApp() -> (process: NSRunningApplication, element: AXUIElement) {
-    guard let app = runningApp() else { stop(.notRunning, "Vitruvian (\(bundleID)) is not running.") }
+    guard let app = runningApp() else { stop(.notRunning, "Vitruvian Atrium (\(bundleID)) is not running.") }
     // Asked, never prompted for: this command changes no permission.
     guard AXIsProcessTrusted() else {
         stop(.noAccessibility, "The terminal running this has no Accessibility permission. Nothing was done.")
@@ -254,7 +254,7 @@ func selectPage(_ title: String, in app: AXUIElement) -> Bool {
 
 // MARK: - Keys
 
-/// True when Vitruvian is the app the keyboard is on.
+/// True when Vitruvian Atrium is the app the keyboard is on.
 func keyboardIsOnTheApp(_ process: NSRunningApplication) -> Bool {
     guard let focused = attribute(AXUIElementCreateSystemWide(), kAXFocusedApplicationAttribute) else { return false }
     var pid: pid_t = 0
@@ -271,7 +271,7 @@ func bringForward(_ app: (process: NSRunningApplication, element: AXUIElement)) 
     if !keyboardIsOnTheApp(app.process) { app.process.activate(options: [.activateAllWindows]) }
     for _ in 0..<20 where !keyboardIsOnTheApp(app.process) { pause(0.1) }
     guard keyboardIsOnTheApp(app.process) else {
-        stop(.notFound, "Vitruvian did not come to the front, so no key was sent.")
+        stop(.notFound, "Vitruvian Atrium did not come to the front, so no key was sent.")
     }
 }
 
@@ -454,7 +454,7 @@ func barResults(_ app: AXUIElement) -> [Control]? {
 }
 
 /// Leaves the bar closed: Escape, twice at most, and only while it is open
-/// and the keyboard is on Vitruvian.
+/// and the keyboard is on Vitruvian Atrium.
 func barIsOpen(_ app: AXUIElement) -> Bool {
     windows(of: app, except: Words.settingsWindow).flatMap(controls(under:))
         .contains { $0.role == "AXTextField" && $0.description == Words.commandBarPage }
@@ -507,18 +507,18 @@ func quitApp(_ app: (process: NSRunningApplication, element: AXUIElement)) {
         stop(.notFound, "The app's menu has no \"\(Words.quitMenuItem)\". Nothing was done.")
     }
     for _ in 0..<40 where !app.process.isTerminated { pause(0.25) }
-    guard app.process.isTerminated else { stop(.notFound, "Vitruvian was asked to quit and is still running after 10 seconds.") }
-    say("quit: Vitruvian has quit")
+    guard app.process.isTerminated else { stop(.notFound, "Vitruvian Atrium was asked to quit and is still running after 10 seconds.") }
+    say("quit: Vitruvian Atrium has quit")
 }
 
 func launchApp() {
-    guard runningApp() == nil else { return say("launch: Vitruvian is already running") }
+    guard runningApp() == nil else { return say("launch: Vitruvian Atrium is already running") }
     guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
         stop(.notFound, "No app with the bundle id \(bundleID) is installed.")
     }
     NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration()) { _, _ in }
     for _ in 0..<40 where runningApp() == nil { pause(0.25) }
-    guard runningApp() != nil else { stop(.notFound, "Vitruvian did not start within 10 seconds (\(url.path)).") }
+    guard runningApp() != nil else { stop(.notFound, "Vitruvian Atrium did not start within 10 seconds (\(url.path)).") }
     say("launch: started \(url.path)")
 }
 

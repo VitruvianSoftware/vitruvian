@@ -423,7 +423,7 @@ mod tests {
         // A new test suite and the test program's own domain are caught; an
         // app's preferences are none of this check's business.
         fs::write(
-            dir.join("com.vitruviansoftware.vitruvian.tests.new.plist"),
+            dir.join("com.vitruviansoftware.atrium.tests.new.plist"),
             "{}",
         )
         .unwrap();
@@ -432,7 +432,7 @@ mod tests {
         assert_eq!(
             changed_test_preferences(&before, &test_preferences(&dir)),
             vec![
-                "com.vitruviansoftware.vitruvian.tests.new.plist",
+                "com.vitruviansoftware.atrium.tests.new.plist",
                 "metrics-tests.plist"
             ]
         );
@@ -455,7 +455,7 @@ mod tests {
     fn test_parse_args() {
         let cfg = parse_args(&[
             "bin/test".to_string(),
-            "apps/desktop/vitruvian".to_string(),
+            "apps/desktop/vitruvian-atrium".to_string(),
             "--suite=notch".to_string(),
             "--suite=mixer".to_string(),
         ])
@@ -464,13 +464,13 @@ mod tests {
 
         assert!(parse_args(&[
             "bin/test".to_string(),
-            "apps/desktop/vitruvian".to_string(),
+            "apps/desktop/vitruvian-atrium".to_string(),
             "--unknown".to_string()
         ])
         .is_err());
         assert!(parse_args(&[
             "bin/test".to_string(),
-            "apps/desktop/vitruvian".to_string(),
+            "apps/desktop/vitruvian-atrium".to_string(),
             "--suite=".to_string()
         ])
         .is_err());

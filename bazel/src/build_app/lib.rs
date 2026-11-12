@@ -1,8 +1,8 @@
 // Copyright (c) 2026 VitruvianSoftware
 // SPDX-License-Identifier: MIT
 
-//! Native Rust implementation of `apps/desktop/vitruvian/build.sh`.
-//! Builds Vitruvian (or runs the standalone test suite), assembles the `.app` bundle,
+//! Native Rust implementation of `apps/desktop/vitruvian-atrium/build.sh`.
+//! Builds Vitruvian Atrium (or runs the standalone test suite), assembles the `.app` bundle,
 //! computes the fan-control helper SHA-256 version stamp, signs the bundle (Developer ID,
 //! `"Vitruvian Signing"`, or ad-hoc), and optionally installs it into `/Applications`.
 
@@ -11,24 +11,24 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-pub const RELEASE_APP_NAME: &str = "Vitruvian";
-pub const DEV_APP_NAME: &str = "Vitruvian (Developer)";
-pub const RELEASE_EXECUTABLE: &str = "Vitruvian";
-pub const DEV_EXECUTABLE: &str = "VitruvianDeveloper";
-pub const RELEASE_BUNDLE_ID: &str = "com.vitruviansoftware.vitruvian";
-pub const DEV_BUNDLE_ID: &str = "com.vitruviansoftware.vitruvian.dev";
-pub const NOW_PLAYING_ADAPTER: &str = "libVitruvianNowPlaying.dylib";
+pub const RELEASE_APP_NAME: &str = "Vitruvian Atrium";
+pub const DEV_APP_NAME: &str = "Vitruvian Atrium (Developer)";
+pub const RELEASE_EXECUTABLE: &str = "VitruvianAtrium";
+pub const DEV_EXECUTABLE: &str = "VitruvianAtriumDeveloper";
+pub const RELEASE_BUNDLE_ID: &str = "com.vitruviansoftware.atrium";
+pub const DEV_BUNDLE_ID: &str = "com.vitruviansoftware.atrium.dev";
+pub const NOW_PLAYING_ADAPTER: &str = "libVitruvianAtriumNowPlaying.dylib";
 pub const TARGET_TRIPLE: &str = "arm64-apple-macosx14.0";
-pub const ENTITLEMENTS_REL: &str = "Resources/Vitruvian.entitlements";
+pub const ENTITLEMENTS_REL: &str = "Resources/VitruvianAtrium.entitlements";
 pub const LEGACY_IDENTITY: &str = "Vitruvian Signing";
 pub const PINNED_SDK_PATH: &str = "/Library/Developer/CommandLineTools/SDKs/MacOSX26.sdk";
 
 pub const FAN_HELPER_SOURCES: &[&str] = &[
-    "Sources/Vitruvian/FanControlKit/FanControlSupport.swift",
-    "Sources/Vitruvian/Services/FanControl/FanControlXPC.swift",
-    "Sources/Vitruvian/Services/SystemMonitor/SMCClient.swift",
-    "Sources/Vitruvian/FanControlKit/TemperatureSensorSelector.swift",
-    "Sources/Vitruvian/Services/FanControl/FanControlHardware.swift",
+    "Sources/VitruvianAtrium/FanControlKit/FanControlSupport.swift",
+    "Sources/VitruvianAtrium/Services/FanControl/FanControlXPC.swift",
+    "Sources/VitruvianAtrium/Services/SystemMonitor/SMCClient.swift",
+    "Sources/VitruvianAtrium/FanControlKit/TemperatureSensorSelector.swift",
+    "Sources/VitruvianAtrium/Services/FanControl/FanControlHardware.swift",
     "Sources/FanControlHelper/main.swift",
 ];
 
@@ -36,8 +36,8 @@ pub const NOW_PLAYING_SOURCES: &[&str] = &[
     "Sources/NowPlayingAdapter/NowPlayingAdapter.swift",
     "Sources/NowPlayingAdapter/NowPlayingQueue.swift",
     "Sources/NowPlayingAdapter/NowPlayingSelection.swift",
-    "Sources/Vitruvian/Services/Notch/NotchPlaybackSource.swift",
-    "Sources/Vitruvian/Services/Notch/NotchPlaybackCommand.swift",
+    "Sources/VitruvianAtrium/Services/Notch/NotchPlaybackSource.swift",
+    "Sources/VitruvianAtrium/Services/Notch/NotchPlaybackCommand.swift",
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -188,7 +188,7 @@ pub fn build_rename_fan_helper_plistbuddy_commands(helper_id: &str) -> Vec<Strin
             "Set :BundleProgram Contents/Library/LaunchServices/{}",
             helper_id
         ),
-        "Delete :MachServices:com.vitruviansoftware.vitruvian.fan-control".to_string(),
+        "Delete :MachServices:com.vitruviansoftware.atrium.fan-control".to_string(),
         format!("Add :MachServices:{} bool true", helper_id),
     ]
 }
@@ -246,7 +246,7 @@ pub fn should_use_full_path_process_match(proc_name: &str) -> bool {
 
 fn find_app_dir() -> PathBuf {
     if let Ok(w) = env::var("BUILD_WORKSPACE_DIRECTORY") {
-        let candidate = PathBuf::from(&w).join("apps/desktop/vitruvian");
+        let candidate = PathBuf::from(&w).join("apps/desktop/vitruvian-atrium");
         if candidate.join("build.sh").is_file() {
             return candidate;
         }
@@ -255,7 +255,7 @@ fn find_app_dir() -> PathBuf {
     if cwd.join("build.sh").is_file() {
         return cwd;
     }
-    let sub = cwd.join("apps/desktop/vitruvian");
+    let sub = cwd.join("apps/desktop/vitruvian-atrium");
     if sub.join("build.sh").is_file() {
         return sub;
     }
@@ -280,7 +280,7 @@ pub fn run_cli(args: &[String]) -> i32 {
     if flags.dry_run {
         if flags.test {
             println!(
-                "dry-run: build & run VitruvianTests (args: {:?})",
+                "dry-run: build & run VitruvianAtriumTests (args: {:?})",
                 flags.test_args
             );
             return 0;
@@ -342,20 +342,20 @@ mod tests {
         assert!(flags.dry_run);
 
         let dev_var = resolve_variant(&flags);
-        assert_eq!(dev_var.app_name, "Vitruvian (Developer)");
-        assert_eq!(dev_var.executable, "VitruvianDeveloper");
-        assert_eq!(dev_var.app_bundle_id, "com.vitruviansoftware.vitruvian.dev");
+        assert_eq!(dev_var.app_name, "Vitruvian Atrium (Developer)");
+        assert_eq!(dev_var.executable, "VitruvianAtriumDeveloper");
+        assert_eq!(dev_var.app_bundle_id, "com.vitruviansoftware.atrium.dev");
         assert_eq!(
             dev_var.fan_helper_id,
-            "com.vitruviansoftware.vitruvian.dev.fan-control"
+            "com.vitruviansoftware.atrium.dev.fan-control"
         );
         assert_eq!(dev_var.stage_directory, "build/stage.noindex");
 
         let rel_flags = parse_cli_args(&[]).unwrap();
         let rel_var = resolve_variant(&rel_flags);
-        assert_eq!(rel_var.app_name, "Vitruvian");
-        assert_eq!(rel_var.executable, "Vitruvian");
-        assert_eq!(rel_var.app_bundle_id, "com.vitruviansoftware.vitruvian");
+        assert_eq!(rel_var.app_name, "Vitruvian Atrium");
+        assert_eq!(rel_var.executable, "VitruvianAtrium");
+        assert_eq!(rel_var.app_bundle_id, "com.vitruviansoftware.atrium");
         assert_eq!(rel_var.stage_directory, "build/stage");
     }
 
@@ -376,20 +376,20 @@ mod tests {
     #[test]
     fn test_render_swift_output_file_map() {
         let json = render_swift_output_file_map(
-            "build/objects/Vitruvian",
+            "build/objects/VitruvianAtrium",
             &[
-                "Sources/Vitruvian/Core/Defaults.swift",
-                "Sources/Vitruvian/main.swift",
+                "Sources/VitruvianAtrium/Core/Defaults.swift",
+                "Sources/VitruvianAtrium/main.swift",
             ],
         );
-        assert!(
-            json.contains("\"swift-dependencies\": \"build/objects/Vitruvian/master.swiftdeps\"")
-        );
         assert!(json.contains(
-            "\"object\": \"build/objects/Vitruvian/Sources__Vitruvian__Core__Defaults.o\""
+            "\"swift-dependencies\": \"build/objects/VitruvianAtrium/master.swiftdeps\""
         ));
         assert!(json.contains(
-            "\"swift-dependencies\": \"build/objects/Vitruvian/Sources__Vitruvian__main.swiftdeps\""
+            "\"object\": \"build/objects/VitruvianAtrium/Sources__VitruvianAtrium__Core__Defaults.o\""
+        ));
+        assert!(json.contains(
+            "\"swift-dependencies\": \"build/objects/VitruvianAtrium/Sources__VitruvianAtrium__main.swiftdeps\""
         ));
     }
 
@@ -407,12 +407,12 @@ mod tests {
         assert!(resolve_sdk_flags("/Applications/Xcode.app/SDKs/MacOSX.sdk").is_empty());
 
         let cmds = build_rename_fan_helper_plistbuddy_commands(
-            "com.vitruviansoftware.vitruvian.dev.fan-control",
+            "com.vitruviansoftware.atrium.dev.fan-control",
         );
         assert_eq!(cmds.len(), 4);
         assert_eq!(
             cmds[0],
-            "Set :Label com.vitruviansoftware.vitruvian.dev.fan-control"
+            "Set :Label com.vitruviansoftware.atrium.dev.fan-control"
         );
     }
 
@@ -421,8 +421,8 @@ mod tests {
         let dev_args = build_codesign_args_for_target(
             &SigningMode::DeveloperId("Developer ID Application: Test".to_string()),
             None,
-            Some("Resources/Vitruvian.entitlements"),
-            "/tmp/Vitruvian.app",
+            Some("Resources/VitruvianAtrium.entitlements"),
+            "/tmp/Vitruvian Atrium.app",
         );
         assert!(dev_args.contains(&"runtime".to_string()));
         assert!(dev_args.contains(&"--timestamp".to_string()));
@@ -430,21 +430,27 @@ mod tests {
 
         let legacy_args = build_codesign_args_for_target(
             &SigningMode::LegacySelfSigned,
-            Some("com.vitruviansoftware.vitruvian.fan-control"),
+            Some("com.vitruviansoftware.atrium.fan-control"),
             None,
             "/tmp/helper",
         );
         assert!(!legacy_args.contains(&"runtime".to_string()));
         assert!(legacy_args.contains(&"Vitruvian Signing".to_string()));
 
-        let adhoc_args =
-            build_codesign_args_for_target(&SigningMode::AdHoc, None, None, "/tmp/Vitruvian.app");
+        let adhoc_args = build_codesign_args_for_target(
+            &SigningMode::AdHoc,
+            None,
+            None,
+            "/tmp/Vitruvian Atrium.app",
+        );
         assert!(adhoc_args.contains(&"-".to_string()));
     }
 
     #[test]
     fn test_process_name_length_matching() {
-        assert!(!should_use_full_path_process_match("Vitruvian"));
-        assert!(should_use_full_path_process_match("VitruvianDeveloper"));
+        assert!(!should_use_full_path_process_match("VitruvianAtrium"));
+        assert!(should_use_full_path_process_match(
+            "VitruvianAtriumDeveloper"
+        ));
     }
 }

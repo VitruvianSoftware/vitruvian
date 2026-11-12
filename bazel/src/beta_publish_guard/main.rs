@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 VitruvianSoftware
 
-//! `bazel run //apps/desktop/vitruvian:beta_publish_guard -- <status>`
+//! `bazel run //apps/desktop/vitruvian-atrium:beta_publish_guard -- <status>`
 //! prints `publish`, `skip` or `refuse`. publish calls the library directly.
 
 fn main() {

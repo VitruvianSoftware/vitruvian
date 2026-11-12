@@ -3,12 +3,12 @@
 
 //! Turns the Bazel-built app into the release's disk images and zip, in
 //! `<package>/dist/`:
-//!   Vitruvian-<version>-universal.dmg, Vitruvian-<version>.dmg (the same
-//!   image), Vitruvian-<version>-universal.zip, Vitruvian-<version>-arm64.dmg
-//!   and Vitruvian-<version>-x86_64.dmg.
+//!   VitruvianAtrium-<version>-universal.dmg, VitruvianAtrium-<version>.dmg (the same
+//!   image), VitruvianAtrium-<version>-universal.zip, VitruvianAtrium-<version>-arm64.dmg
+//!   and VitruvianAtrium-<version>-x86_64.dmg.
 //!
-//!   bazel build --config=macos-app //apps/desktop/vitruvian:Vitruvian
-//!   bazel run //apps/desktop/vitruvian:package_release -- <path to Vitruvian.zip>
+//!   bazel build --config=macos-app //apps/desktop/vitruvian-atrium:VitruvianAtrium
+//!   bazel run //apps/desktop/vitruvian-atrium:package_release -- <path to VitruvianAtrium.zip>
 //!
 //! It unpacks the bundle into a temp dir (never a "build" directory, which on
 //! macOS's case-insensitive filesystem is the package's Bazel BUILD file) and
@@ -26,12 +26,12 @@ use release_exec::{
 use std::fs;
 use std::path::{Path, PathBuf};
 
-pub const APP_BUNDLE_ID: &str = "com.vitruviansoftware.vitruvian";
-pub const FAN_HELPER_ID: &str = "com.vitruviansoftware.vitruvian.fan-control";
-pub const NOW_PLAYING_ADAPTER_ID: &str = "com.vitruviansoftware.vitruvian.now-playing";
-pub const MOUSE_TOOL_ID: &str = "com.vitruviansoftware.vitruvian.gravastar-mouse";
-pub const ENTITLEMENTS_REL: &str = "Resources/Vitruvian.entitlements";
-pub const USAGE: &str = "usage: package-release <path to the Bazel-built Vitruvian.zip>";
+pub const APP_BUNDLE_ID: &str = "com.vitruviansoftware.atrium";
+pub const FAN_HELPER_ID: &str = "com.vitruviansoftware.atrium.fan-control";
+pub const NOW_PLAYING_ADAPTER_ID: &str = "com.vitruviansoftware.atrium.now-playing";
+pub const MOUSE_TOOL_ID: &str = "com.vitruviansoftware.atrium.gravastar-mouse";
+pub const ENTITLEMENTS_REL: &str = "Resources/VitruvianAtrium.entitlements";
+pub const USAGE: &str = "usage: package-release <path to the Bazel-built VitruvianAtrium.zip>";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BundleLayout {
@@ -45,11 +45,11 @@ pub struct BundleLayout {
 pub fn bundle_layout(app: &Path) -> BundleLayout {
     BundleLayout {
         app: app.to_path_buf(),
-        main_executable: app.join("Contents/MacOS/Vitruvian"),
+        main_executable: app.join("Contents/MacOS/VitruvianAtrium"),
         helper: app
             .join("Contents/Library/LaunchServices")
             .join(FAN_HELPER_ID),
-        adapter: app.join("Contents/Frameworks/libVitruvianNowPlaying.dylib"),
+        adapter: app.join("Contents/Frameworks/libVitruvianAtriumNowPlaying.dylib"),
         mouse_tool: app.join("Contents/Helpers/gravastar-mouse"),
     }
 }
@@ -64,7 +64,7 @@ pub struct ReleaseArtifacts {
 }
 
 pub fn expected_artifacts(dist: &Path, version: &str) -> ReleaseArtifacts {
-    let f = |suffix: &str| dist.join(format!("Vitruvian-{}{}", version, suffix));
+    let f = |suffix: &str| dist.join(format!("VitruvianAtrium-{}{}", version, suffix));
     ReleaseArtifacts {
         universal_dmg: f("-universal.dmg"),
         default_dmg: f(".dmg"),
@@ -230,7 +230,7 @@ fn thinned_copy(r: &mut dyn Runner, app: &Path, stage: &Path, arch: &str) -> Res
         eprintln!("✗ mkdir {}: {}", dir.display(), e);
         1
     })?;
-    let thin = dir.join("Vitruvian.app");
+    let thin = dir.join("Vitruvian Atrium.app");
     run(r, &Cmd::new("ditto").path(app).path(&thin))?;
     let l = bundle_layout(&thin);
     for bin in [&l.main_executable, &l.helper, &l.adapter, &l.mouse_tool] {
@@ -271,7 +271,7 @@ pub fn package_release(
         1
     })?;
     let _cleanup = TempDir(stage.clone());
-    let layout = bundle_layout(&stage.join("Vitruvian.app"));
+    let layout = bundle_layout(&stage.join("Vitruvian Atrium.app"));
 
     println!("▸ Unpacking {}…", archive.display());
     run(
@@ -358,7 +358,7 @@ pub fn package_release(
     }
 
     println!("✓ Release artifacts ready in dist/:");
-    let prefix = format!("Vitruvian-{}", version);
+    let prefix = format!("VitruvianAtrium-{}", version);
     let mut listed: Vec<PathBuf> = fs::read_dir(&dist)
         .map(|it| {
             it.filter_map(|e| e.ok())
@@ -433,7 +433,7 @@ mod tests {
         let tmp = root.join("tmp");
         fs::create_dir_all(&pkg).unwrap();
         fs::create_dir_all(&tmp).unwrap();
-        let archive = root.join("Vitruvian.zip");
+        let archive = root.join("VitruvianAtrium.zip");
         fs::write(&archive, b"zip").unwrap();
         Scene {
             _guard: TempDir(root.clone()),
@@ -451,7 +451,7 @@ mod tests {
             let a: Vec<&str> = c.args.iter().map(String::as_str).collect();
             match (c.program.as_str(), a.as_slice()) {
                 ("ditto", ["-x", "-k", _, stage]) => {
-                    let l = bundle_layout(&Path::new(stage).join("Vitruvian.app"));
+                    let l = bundle_layout(&Path::new(stage).join("Vitruvian Atrium.app"));
                     for p in [&l.main_executable, &l.helper, &l.adapter, &l.mouse_tool] {
                         if missing.is_some_and(|m| p.to_string_lossy().ends_with(m)) {
                             continue;
@@ -509,8 +509,8 @@ mod tests {
 
     #[test]
     fn developer_id_signing_uses_the_hardened_runtime_and_the_entitlements() {
-        let app = Path::new("/s/Vitruvian.app");
-        let ent = Path::new("/pkg/Resources/Vitruvian.entitlements");
+        let app = Path::new("/s/Vitruvian Atrium.app");
+        let ent = Path::new("/pkg/Resources/VitruvianAtrium.entitlements");
         let lines: Vec<String> =
             sign_bundle_commands(app, Some("Developer ID Application: V (T)"), ent)
                 .iter()
@@ -519,14 +519,14 @@ mod tests {
         assert_eq!(
             lines,
             vec![
-                format!("codesign --force --options runtime --timestamp --identifier {} --sign Developer ID Application: V (T) /s/Vitruvian.app/Contents/Library/LaunchServices/{}", FAN_HELPER_ID, FAN_HELPER_ID),
-                format!("codesign --force --options runtime --timestamp --identifier {} --sign Developer ID Application: V (T) /s/Vitruvian.app/Contents/Frameworks/libVitruvianNowPlaying.dylib", NOW_PLAYING_ADAPTER_ID),
-                format!("codesign --force --options runtime --timestamp --identifier {} --sign Developer ID Application: V (T) /s/Vitruvian.app/Contents/Helpers/gravastar-mouse", MOUSE_TOOL_ID),
-                "codesign --force --options runtime --timestamp --entitlements /pkg/Resources/Vitruvian.entitlements --sign Developer ID Application: V (T) /s/Vitruvian.app".to_string(),
-                format!("codesign --verify --strict /s/Vitruvian.app/Contents/Library/LaunchServices/{}", FAN_HELPER_ID),
-                "codesign --verify --strict /s/Vitruvian.app/Contents/Frameworks/libVitruvianNowPlaying.dylib".to_string(),
-                "codesign --verify --strict /s/Vitruvian.app/Contents/Helpers/gravastar-mouse".to_string(),
-                "codesign --verify --deep --strict /s/Vitruvian.app".to_string(),
+                format!("codesign --force --options runtime --timestamp --identifier {} --sign Developer ID Application: V (T) /s/Vitruvian Atrium.app/Contents/Library/LaunchServices/{}", FAN_HELPER_ID, FAN_HELPER_ID),
+                format!("codesign --force --options runtime --timestamp --identifier {} --sign Developer ID Application: V (T) /s/Vitruvian Atrium.app/Contents/Frameworks/libVitruvianAtriumNowPlaying.dylib", NOW_PLAYING_ADAPTER_ID),
+                format!("codesign --force --options runtime --timestamp --identifier {} --sign Developer ID Application: V (T) /s/Vitruvian Atrium.app/Contents/Helpers/gravastar-mouse", MOUSE_TOOL_ID),
+                "codesign --force --options runtime --timestamp --entitlements /pkg/Resources/VitruvianAtrium.entitlements --sign Developer ID Application: V (T) /s/Vitruvian Atrium.app".to_string(),
+                format!("codesign --verify --strict /s/Vitruvian Atrium.app/Contents/Library/LaunchServices/{}", FAN_HELPER_ID),
+                "codesign --verify --strict /s/Vitruvian Atrium.app/Contents/Frameworks/libVitruvianAtriumNowPlaying.dylib".to_string(),
+                "codesign --verify --strict /s/Vitruvian Atrium.app/Contents/Helpers/gravastar-mouse".to_string(),
+                "codesign --verify --deep --strict /s/Vitruvian Atrium.app".to_string(),
             ]
         );
     }
@@ -541,7 +541,7 @@ mod tests {
             lines[..4].to_vec(),
             vec![
                 format!("codesign --force --identifier {} --sign - /s/V.app/Contents/Library/LaunchServices/{}", FAN_HELPER_ID, FAN_HELPER_ID),
-                format!("codesign --force --identifier {} --sign - /s/V.app/Contents/Frameworks/libVitruvianNowPlaying.dylib", NOW_PLAYING_ADAPTER_ID),
+                format!("codesign --force --identifier {} --sign - /s/V.app/Contents/Frameworks/libVitruvianAtriumNowPlaying.dylib", NOW_PLAYING_ADAPTER_ID),
                 format!("codesign --force --identifier {} --sign - /s/V.app/Contents/Helpers/gravastar-mouse", MOUSE_TOOL_ID),
                 "codesign --force --sign - /s/V.app".to_string(),
             ]
@@ -599,9 +599,9 @@ mod tests {
                         format!("ditto {}", first)
                     }
                 } else if word == "MAKE_DMG" || word == "NOTARIZE" {
-                    let last = c.rsplit(' ').next().unwrap();
-                    let tail = if last.ends_with(".app") {
-                        let parent = Path::new(last)
+                    let rest = c.strip_prefix(word.as_str()).unwrap().trim_start();
+                    let tail = if rest.ends_with(".app") {
+                        let parent = Path::new(rest)
                             .parent()
                             .unwrap()
                             .file_name()
@@ -614,6 +614,7 @@ mod tests {
                             "universal.app".to_string()
                         }
                     } else {
+                        let last = rest.rsplit(' ').next().unwrap();
                         Path::new(last)
                             .file_name()
                             .unwrap()
@@ -630,7 +631,7 @@ mod tests {
             "ditto -x",
             "sign-app",
             "NOTARIZE universal.app",
-            "MAKE_DMG Vitruvian-3.86.0-universal.dmg",
+            "MAKE_DMG VitruvianAtrium-3.86.0-universal.dmg",
             "ditto -c",
             "ditto /",
             "lipo-thin arm64",
@@ -639,7 +640,7 @@ mod tests {
             "lipo-thin arm64",
             "sign-app",
             "NOTARIZE arm64.app",
-            "MAKE_DMG Vitruvian-3.86.0-arm64.dmg",
+            "MAKE_DMG VitruvianAtrium-3.86.0-arm64.dmg",
             "ditto /",
             "lipo-thin x86_64",
             "lipo-thin x86_64",
@@ -647,11 +648,11 @@ mod tests {
             "lipo-thin x86_64",
             "sign-app",
             "NOTARIZE x86_64.app",
-            "MAKE_DMG Vitruvian-3.86.0-x86_64.dmg",
-            "NOTARIZE Vitruvian-3.86.0-universal.dmg",
-            "NOTARIZE Vitruvian-3.86.0-arm64.dmg",
-            "NOTARIZE Vitruvian-3.86.0-x86_64.dmg",
-            "NOTARIZE Vitruvian-3.86.0.dmg",
+            "MAKE_DMG VitruvianAtrium-3.86.0-x86_64.dmg",
+            "NOTARIZE VitruvianAtrium-3.86.0-universal.dmg",
+            "NOTARIZE VitruvianAtrium-3.86.0-arm64.dmg",
+            "NOTARIZE VitruvianAtrium-3.86.0-x86_64.dmg",
+            "NOTARIZE VitruvianAtrium-3.86.0.dmg",
             "ls",
         ];
         assert_eq!(kinds, expect, "{:#?}", steps);
@@ -664,19 +665,19 @@ mod tests {
             .find(|c| c.starts_with("ditto -c -k --keepParent "))
             .unwrap();
         assert!(zip.ends_with(&format!(
-            "/Vitruvian.app {}",
-            d("Vitruvian-3.86.0-universal.zip")
+            "/Vitruvian Atrium.app {}",
+            d("VitruvianAtrium-3.86.0-universal.zip")
         )));
-        assert!(dist.join("Vitruvian-3.86.0.dmg").is_file());
+        assert!(dist.join("VitruvianAtrium-3.86.0.dmg").is_file());
         let ls = r.calls.last().unwrap();
         assert_eq!(
             *ls,
             format!(
                 "ls -lh {} {} {} {}",
-                d("Vitruvian-3.86.0-arm64.dmg"),
-                d("Vitruvian-3.86.0-universal.dmg"),
-                d("Vitruvian-3.86.0-x86_64.dmg"),
-                d("Vitruvian-3.86.0.dmg"),
+                d("VitruvianAtrium-3.86.0-arm64.dmg"),
+                d("VitruvianAtrium-3.86.0-universal.dmg"),
+                d("VitruvianAtrium-3.86.0-x86_64.dmg"),
+                d("VitruvianAtrium-3.86.0.dmg"),
             )
         );
         // The entitlements are the package's.

@@ -305,7 +305,7 @@ mod tests {
     fn an_app_is_verified_zipped_submitted_and_stapled_with_a_private_key() {
         let d = scratch("notarize_app");
         let _g = TempDir(d.clone());
-        let app = d.join("Vitruvian.app");
+        let app = d.join("Vitruvian Atrium.app");
         fs::create_dir_all(&app).unwrap();
         let tmp = d.join("tmp");
         let seen_key = std::rc::Rc::new(std::cell::RefCell::new(None));
@@ -331,9 +331,9 @@ mod tests {
             format!("codesign --verify --deep --strict {}", app_s)
         );
         assert!(r.calls[2].starts_with(&format!("/usr/bin/ditto -c -k --keepParent {} ", app_s)));
-        assert!(r.calls[2].ends_with("/Vitruvian.app.zip"));
+        assert!(r.calls[2].ends_with("/Vitruvian Atrium.app.zip"));
         assert!(r.calls[3].starts_with("xcrun notarytool submit "));
-        assert!(r.calls[3].contains("/Vitruvian.app.zip --key "));
+        assert!(r.calls[3].contains("/Vitruvian Atrium.app.zip --key "));
         assert!(r.calls[3].ends_with("/AuthKey.p8 --key-id KEY123 --issuer ISSUER456 --wait"));
         assert_eq!(r.calls[4], format!("xcrun stapler staple {}", app_s));
         #[cfg(unix)]
@@ -346,7 +346,7 @@ mod tests {
     fn a_dmg_is_submitted_as_is_and_a_failed_submission_fails_with_its_code() {
         let d = scratch("notarize_dmg");
         let _g = TempDir(d.clone());
-        let dmg = d.join("Vitruvian-1.2.3.dmg");
+        let dmg = d.join("VitruvianAtrium-1.2.3.dmg");
         fs::write(&dmg, b"dmg").unwrap();
         let tmp = d.join("tmp");
         let mut r = FakeRunner::succeeding();

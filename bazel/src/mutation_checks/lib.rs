@@ -61,7 +61,7 @@ pub fn run(
     test_arguments: &[String],
     timeout_secs: u64,
 ) -> Result<(i32, String), String> {
-    let unit_tests = "//apps/desktop/vitruvian:unit_tests";
+    let unit_tests = "//apps/desktop/vitruvian-atrium:unit_tests";
     let mut cmd = Command::new("bazel");
     cmd.arg("test")
         .arg("--config=macos-app")
@@ -214,7 +214,7 @@ pub fn run_cli(args: &[String]) -> i32 {
                 .unwrap_or(Path::new("."))
                 .to_path_buf()
         });
-    let root = workspace.join("apps/desktop/vitruvian");
+    let root = workspace.join("apps/desktop/vitruvian-atrium");
     let bazel_flags: Vec<String> = args.to_vec();
 
     match run_mutation_suite(&workspace, &root, &bazel_flags) {
@@ -368,8 +368,8 @@ mod tests {
     fn mutations_count() {
         assert_eq!(
             MUTATIONS.len(),
-            573,
-            "expected 573 mutations from the Python source"
+            571,
+            "expected 571 mutations from the Python source"
         );
     }
 
@@ -380,7 +380,7 @@ mod tests {
         assert_eq!(first.group, "mixer");
         assert_eq!(
             first.relative,
-            "Sources/Vitruvian/Core/Audio/MixerRoutingSupport.swift"
+            "Sources/VitruvianAtrium/Core/Audio/MixerRoutingSupport.swift"
         );
     }
 

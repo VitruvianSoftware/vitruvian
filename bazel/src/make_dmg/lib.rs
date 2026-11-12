@@ -3,7 +3,7 @@
 // Copyright (C) 2026 VitruvianSoftware
 
 //! Packages a signed app into a styled, distributable DMG
-//! (`dist/Vitruvian-<version>.dmg` unless told where): a window with the app
+//! (`dist/VitruvianAtrium-<version>.dmg` unless told where): a window with the app
 //! icon, an arrow and the Applications folder for drag-and-drop install.
 //! Ported from upstream's `Tools/make-dmg.sh`; package_release calls it.
 //!
@@ -18,8 +18,9 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-pub const APP_NAME: &str = "Vitruvian";
-pub const VOLUME: &str = "Vitruvian";
+pub const APP_NAME: &str = "Vitruvian Atrium";
+pub const DMG_PREFIX: &str = "VitruvianAtrium";
+pub const VOLUME: &str = "Vitruvian Atrium";
 
 /// How long Finder may take to style the window before it is killed and the
 /// DMG ships unstyled.
@@ -27,12 +28,12 @@ pub const STYLE_LIMIT: Duration = Duration::from_secs(25);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DmgRequest {
-    /// `apps/desktop/vitruvian`: where `Tools/MakeDMGBackground.swift` and
+    /// `apps/desktop/vitruvian-atrium`: where `Tools/MakeDMGBackground.swift` and
     /// the default `dist/` are.
     pub pkg_dir: PathBuf,
-    /// The signed `Vitruvian.app`.
+    /// The signed `Vitruvian Atrium.app`.
     pub app: PathBuf,
-    /// Where the DMG goes; `<pkg_dir>/dist/Vitruvian-<version>.dmg` if not set.
+    /// Where the DMG goes; `<pkg_dir>/dist/VitruvianAtrium-<version>.dmg` if not set.
     pub out: Option<PathBuf>,
     /// `DEVELOPER_ID` from the environment: signs the image with this identity
     /// instead of the installed Developer ID.
@@ -178,7 +179,7 @@ fn build(r: &mut dyn Runner, req: &DmgRequest, left: &mut Leftovers) -> Result<P
     let out = req.out.clone().unwrap_or_else(|| {
         req.pkg_dir
             .join("dist")
-            .join(format!("{}-{}.dmg", APP_NAME, version))
+            .join(format!("{}-{}.dmg", DMG_PREFIX, version))
     });
 
     let work = fs_step("mktemp", make_temp_dir(&req.tmp_root, "vitruvian-dmg-work"))?;
@@ -442,11 +443,11 @@ mod tests {
 
     fn scene(name: &str) -> Scene {
         let root = make_temp_dir(&std::env::temp_dir(), name).unwrap();
-        let app = root.join("in/Vitruvian.app");
+        let app = root.join("in/Vitruvian Atrium.app");
         fs::create_dir_all(app.join("Contents")).unwrap();
         fs::create_dir_all(root.join("pkg")).unwrap();
         fs::create_dir_all(root.join("tmp")).unwrap();
-        let mount = PathBuf::from("/Volumes/Vitruvian");
+        let mount = PathBuf::from("/Volumes/Vitruvian Atrium");
         Scene {
             _guard: TempDir(root.clone()),
             req: DmgRequest {
@@ -618,17 +619,17 @@ mod tests {
     #[test]
     fn mount_point_keeps_spaces_in_the_volume_name() {
         let out =
-            "/dev/disk6\tGUID_partition_scheme\t\n/dev/disk6s1\tApple_HFS\t/Volumes/Vitruvian 1\n";
+            "/dev/disk6\tGUID_partition_scheme\t\n/dev/disk6s1\tApple_HFS\t/Volumes/Vitruvian Atrium 1\n";
         assert_eq!(
             parse_mount_point(out).as_deref(),
-            Some("/Volumes/Vitruvian 1")
+            Some("/Volumes/Vitruvian Atrium 1")
         );
         assert_eq!(parse_mount_point("/dev/disk6\t\n"), None);
     }
 
     #[test]
     fn the_finder_script_is_the_heredoc_upstream_wrote() {
-        let want = "tell application \"Finder\"\n    tell disk \"Vitruvian\"\n        open\n        set current view of container window to icon view\n        set toolbar visible of container window to false\n        set statusbar visible of container window to false\n        set the bounds of container window to {200, 120, 800, 520}\n        set theOptions to the icon view options of container window\n        set arrangement of theOptions to not arranged\n        set icon size of theOptions to 128\n        set text size of theOptions to 13\n        set background picture of theOptions to file \".background:background.png\"\n        set position of item \"Vitruvian.app\" of container window to {150, 200}\n        set position of item \"Applications\" of container window to {450, 200}\n        update without registering applications\n        delay 1\n        close\n    end tell\nend tell\n";
+        let want = "tell application \"Finder\"\n    tell disk \"Vitruvian Atrium\"\n        open\n        set current view of container window to icon view\n        set toolbar visible of container window to false\n        set statusbar visible of container window to false\n        set the bounds of container window to {200, 120, 800, 520}\n        set theOptions to the icon view options of container window\n        set arrangement of theOptions to not arranged\n        set icon size of theOptions to 128\n        set text size of theOptions to 13\n        set background picture of theOptions to file \".background:background.png\"\n        set position of item \"Vitruvian Atrium.app\" of container window to {150, 200}\n        set position of item \"Applications\" of container window to {450, 200}\n        update without registering applications\n        delay 1\n        close\n    end tell\nend tell\n";
         assert_eq!(render_finder_applescript(VOLUME, APP_NAME), want);
     }
 
@@ -653,7 +654,7 @@ mod tests {
             },
         );
         let out = make_dmg(&mut r, &s.req).unwrap();
-        assert_eq!(out, s.req.pkg_dir.join("dist/Vitruvian-3.86.0.dmg"));
+        assert_eq!(out, s.req.pkg_dir.join("dist/VitruvianAtrium-3.86.0.dmg"));
         assert!(out.is_file());
 
         let c = &r.calls;
@@ -664,19 +665,19 @@ mod tests {
         assert_eq!(bg.args[0], "Tools/MakeDMGBackground.swift");
         assert_eq!(bg.cwd.as_deref(), Some(s.req.pkg_dir.as_path()));
         let create = r
-            .position("hdiutil create -volname Vitruvian -srcfolder ")
+            .position("hdiutil create -volname Vitruvian Atrium -srcfolder ")
             .unwrap();
         assert!(
             c[create].contains(" -fs HFS+ -format UDRW -ov ") && c[create].ends_with("/rw-1.dmg")
         );
         assert!(
-            r.position("hdiutil detach /Volumes/Vitruvian -force")
+            r.position("hdiutil detach /Volumes/Vitruvian Atrium -force")
                 .unwrap()
                 < create
         );
         let osa = r.cmds.iter().find(|c| c.program == "osascript").unwrap();
         assert!(String::from_utf8_lossy(osa.stdin.as_ref().unwrap())
-            .contains("tell disk \"Vitruvian\""));
+            .contains("tell disk \"Vitruvian Atrium\""));
         let convert = r.position("hdiutil convert ").unwrap();
         assert!(c[convert].ends_with(&format!(
             "/rw-1.dmg -format UDZO -imagekey zlib-level=9 -o {}",

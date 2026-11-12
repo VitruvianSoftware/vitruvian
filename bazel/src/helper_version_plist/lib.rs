@@ -147,7 +147,7 @@ pub fn render_version_plist(version: &str) -> String {
 <!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n\
 <plist version=\"1.0\">\n\
 <dict>\n\
-\t<key>VitruvianFanControlHelperVersion</key>\n\
+\t<key>VitruvianAtriumFanControlHelperVersion</key>\n\
 \t<string>{}</string>\n\
 </dict>\n\
 </plist>\n",
@@ -205,7 +205,7 @@ mod tests {
         assert_eq!(v.len(), 64);
 
         let xml = render_version_plist(&v);
-        assert!(xml.contains("<key>VitruvianFanControlHelperVersion</key>"));
+        assert!(xml.contains("<key>VitruvianAtriumFanControlHelperVersion</key>"));
         assert!(xml.contains(&format!("<string>{}</string>", v)));
     }
 
